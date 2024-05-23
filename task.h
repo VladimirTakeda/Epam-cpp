@@ -3,7 +3,7 @@
 #include <fstream>
 #include <boost/fiber/buffered_channel.hpp>
 
-constexpr int BlockSize = 1024 * 1024;
+#include "ThreadSafeQueue.h"
 
 class Task{
 public:
@@ -13,16 +13,34 @@ public:
 
 class ReadTask : public Task {
 public:
-    explicit ReadTask(std::ifstream &in, boost::fibers::buffered_channel<std::vector<char>> &chan);
+    explicit ReadTask(std::ifstream &in, ThreadSafeQueue &m_buffers);
+    void Run() override;
+private:
+    std::ifstream &m_in;
+    ThreadSafeQueue &m_buffers;
+};
+
+class WriteTask : public Task {
+public:
+    explicit WriteTask(std::ofstream &out, ThreadSafeQueue &m_buffers);
+    void Run() override;
+private:
+    std::ofstream &m_out;
+    ThreadSafeQueue &m_buffers;
+};
+
+class ReadTaskBoost : public Task {
+public:
+    explicit ReadTaskBoost(std::ifstream &in, boost::fibers::buffered_channel<std::vector<char>> &chan);
     void Run() override ;
 private:
     std::ifstream &m_in;
     boost::fibers::buffered_channel<std::vector<char>> &m_chan;
 };
 
-class WriteTask : public Task {
+class WriteTaskBoost : public Task {
 public:
-    explicit WriteTask(std::ofstream &out, boost::fibers::buffered_channel<std::vector<char>> &chan);
+    explicit WriteTaskBoost(std::ofstream &out, boost::fibers::buffered_channel<std::vector<char>> &chan);
     void Run() override;
 private:
     std::ofstream &m_out;
