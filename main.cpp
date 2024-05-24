@@ -12,6 +12,16 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
+    try {
+        if (std::filesystem::remove(argv[2])) {
+            std::cout << "File deleted successfully" << std::endl;
+        } else {
+            std::cout << "File not found or could not be deleted" << std::endl;
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Filesystem error: " << e.what() << std::endl;
+    }
+
     {
         std::ofstream out(argv[2]);
         std::ifstream in(argv[1]);
@@ -21,7 +31,7 @@ int main(int argc, char *argv[]){
         std::unique_ptr<Task> write = std::make_unique<WriteTaskBoost>(out, chan);
         auto start = std::chrono::high_resolution_clock::now();
         {
-            ThreadPool pool(2);
+            ThreadPool pool(1);
             pool.enqueue(std::move(read));
             pool.enqueue(std::move(write));
         }
@@ -49,7 +59,7 @@ int main(int argc, char *argv[]){
         std::unique_ptr<Task> write = std::make_unique<WriteTask>(out, queue);
         auto start = std::chrono::high_resolution_clock::now();
         {
-            ThreadPool pool(2);
+            ThreadPool pool(1);
             pool.enqueue(std::move(read));
             pool.enqueue(std::move(write));
         }

@@ -7,18 +7,18 @@ ThreadPool::ThreadPool(size_t threadCount) {
                 std::unique_ptr<Task> task;
                 {
                     std::unique_lock<std::mutex> lock(
-                            queue_mutex_);
+                            m_queue_mutex);
 
-                    cv_.wait(lock, [this] {
-                        return !tasks_.empty() || stop_;
+                    m_cv.wait(lock, [this] {
+                        return !m_tasks.empty() || stop_;
                     });
 
-                    if (stop_ && tasks_.empty()) {
+                    if (stop_ && m_tasks.empty()) {
                         return;
                     }
 
-                    task = std::move(tasks_.front());
-                    tasks_.pop();
+                    task = std::move(m_tasks.front());
+                    m_tasks.pop();
                 }
 
                 task->Run();
@@ -27,13 +27,33 @@ ThreadPool::ThreadPool(size_t threadCount) {
     }
 }
 
+void ThreadPool::runInMainThread() {
+    while (true) {
+        std::unique_ptr<Task> task;
+        {
+            std::unique_lock<std::mutex> lock(
+                    m_queue_mutex);
+
+            if (m_tasks.empty()) {
+                return;
+            }
+
+            task = std::move(m_tasks.front());
+            m_tasks.pop();
+        }
+
+        task->Run();
+    }
+}
+
 ThreadPool::~ThreadPool() {
+    runInMainThread();
     {
-        std::unique_lock<std::mutex> lock(queue_mutex_);
+        std::unique_lock<std::mutex> lock(m_queue_mutex);
         stop_ = true;
     }
 
-    cv_.notify_all();
+    m_cv.notify_all();
 
     for (auto &thread: m_threads) {
         thread.join();
@@ -43,8 +63,8 @@ ThreadPool::~ThreadPool() {
 
 void ThreadPool::enqueue(std::unique_ptr<Task> &&task) {
     {
-        std::unique_lock<std::mutex> lock(queue_mutex_);
-        tasks_.emplace(std::move(task));
+        std::unique_lock<std::mutex> lock(m_queue_mutex);
+        m_tasks.emplace(std::move(task));
     }
-    cv_.notify_one();
+    m_cv.notify_one();
 }

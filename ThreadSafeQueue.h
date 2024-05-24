@@ -41,9 +41,9 @@ public:
 
     std::vector<std::array<char, BlockSize>> m_data;
     std::vector<size_t> m_sizes;
-    std::atomic_int writeIndex = -1;
-    std::atomic_int readIndex = 0;
-    std::atomic_bool isDone = false;
+    alignas(64) std::atomic_int writeIndex = -1;
+    alignas(64) std::atomic_int readIndex = 0;
+    alignas(64) std::atomic_bool isDone = false;
     std::mutex writeM;
     std::mutex readM;
     std::condition_variable writeCv;

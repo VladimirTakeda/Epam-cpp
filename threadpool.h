@@ -14,11 +14,12 @@ public:
     explicit ThreadPool(size_t threadCount = std::thread::hardware_concurrency());
     ~ThreadPool();
     void enqueue(std::unique_ptr<Task> &&task);
-
 private:
-    std::queue<std::unique_ptr<Task>> tasks_;
-    std::mutex queue_mutex_;
-    std::condition_variable cv_;
+    void runInMainThread();
+private:
+    std::queue<std::unique_ptr<Task>> m_tasks;
+    std::mutex m_queue_mutex;
+    std::condition_variable m_cv;
     bool stop_ = false;
     std::vector<std::thread> m_threads;
 };
