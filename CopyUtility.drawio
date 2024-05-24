@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2024-05-24T19:48:15.198Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" etag="q5ajkoWHiCshGBYItaBT" version="24.4.6" type="device">
+<mxfile host="app.diagrams.net" modified="2024-05-24T19:51:56.578Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" etag="QmhUyoCOIULwtG5tD0Eh" version="24.4.6" type="device">
   <diagram name="Страница — 1" id="SkSNhRLOka-fjrrQesQd">
     <mxGraphModel dx="1242" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -112,7 +112,7 @@
         <mxCell id="cOhIrpGmjhUG028zVPBy-3" value="" style="ellipse;whiteSpace=wrap;html=1;" parent="cOhIrpGmjhUG028zVPBy-2" vertex="1">
           <mxGeometry x="20" y="120" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="cOhIrpGmjhUG028zVPBy-4" value="Alocate 2 buffers" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="cOhIrpGmjhUG028zVPBy-2" vertex="1">
+        <mxCell id="cOhIrpGmjhUG028zVPBy-4" value="Alocate 2 buffers with size = 1 MB" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="cOhIrpGmjhUG028zVPBy-2" vertex="1">
           <mxGeometry x="50" y="140" width="60" height="30" as="geometry" />
         </mxCell>
         <mxCell id="cOhIrpGmjhUG028zVPBy-6" value="Read into zero index and ++readIdx" style="ellipse;whiteSpace=wrap;html=1;" parent="cOhIrpGmjhUG028zVPBy-2" vertex="1">
