@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2024-05-24T19:37:41.490Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" etag="KC9yByCuCdQ6DLA2TlY4" version="24.4.6" type="device">
+<mxfile host="app.diagrams.net" modified="2024-05-24T19:48:15.198Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" etag="q5ajkoWHiCshGBYItaBT" version="24.4.6" type="device">
   <diagram name="Страница — 1" id="SkSNhRLOka-fjrrQesQd">
     <mxGraphModel dx="1242" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -88,7 +88,7 @@
         <mxCell id="EEU7oIaIutK6_dGdKTLs-31" value="Create reader and writer tasks" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="170" y="810" width="90" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="EEU7oIaIutK6_dGdKTLs-32" value="Create ThreadPool with 1 threads" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+        <mxCell id="EEU7oIaIutK6_dGdKTLs-32" value="Create ThreadPool with 1 thread" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="300" y="810" width="90" height="60" as="geometry" />
         </mxCell>
         <mxCell id="EEU7oIaIutK6_dGdKTLs-33" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="EEU7oIaIutK6_dGdKTLs-31" target="EEU7oIaIutK6_dGdKTLs-32" edge="1">
@@ -269,6 +269,66 @@
         </mxCell>
         <mxCell id="7YjA_8oUVK1u_7pSFM_u-33" value="Destructor - executes the tasks from main thread until they all are finished, set stop flag to true and notify all the threads that there are no tasks to do. And wait all side thread until they finished using join method" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="7YjA_8oUVK1u_7pSFM_u-28">
           <mxGeometry y="210" width="370" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-35" value="main thread" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="750" width="90" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-36" value="side thread" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="690" y="850" width="90" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-37" value="start doing a tasks" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="910" y="850" width="90" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-38" value="create ThreadPool" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="690" y="750" width="90" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-39" value="added second task" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="970" y="750" width="90" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-40" value="destructor" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="730" width="210" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-41" value="run tasks in main thread" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1205" y="740" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-42" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="7YjA_8oUVK1u_7pSFM_u-35" target="7YjA_8oUVK1u_7pSFM_u-38">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="590" y="860" as="sourcePoint" />
+            <mxPoint x="640" y="810" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-43" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.022;entryY=0.667;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="EEU7oIaIutK6_dGdKTLs-35" target="7YjA_8oUVK1u_7pSFM_u-35">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="590" y="860" as="sourcePoint" />
+            <mxPoint x="640" y="810" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-44" value="added first task" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="820" y="750" width="90" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-45" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="7YjA_8oUVK1u_7pSFM_u-38" target="7YjA_8oUVK1u_7pSFM_u-44">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="590" y="860" as="sourcePoint" />
+            <mxPoint x="640" y="810" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-46" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=-0.021;entryY=0.432;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="7YjA_8oUVK1u_7pSFM_u-39" target="7YjA_8oUVK1u_7pSFM_u-40">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="900" y="880" as="sourcePoint" />
+            <mxPoint x="950" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-47" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="7YjA_8oUVK1u_7pSFM_u-44" target="7YjA_8oUVK1u_7pSFM_u-39">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="900" y="880" as="sourcePoint" />
+            <mxPoint x="950" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7YjA_8oUVK1u_7pSFM_u-48" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.739;exitY=0.942;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.361;entryY=-0.058;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="7YjA_8oUVK1u_7pSFM_u-44" target="7YjA_8oUVK1u_7pSFM_u-37">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="900" y="880" as="sourcePoint" />
+            <mxPoint x="950" y="830" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
