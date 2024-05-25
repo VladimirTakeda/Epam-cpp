@@ -10,6 +10,7 @@
 #include "task.h"
 
 /// A ThreadPool with side threads and main thread to execute tasks
+/// Not thread-safe (Use only with main thread)
 class ThreadPool {
 public:
     /// @brief creates a side threadCount of threads

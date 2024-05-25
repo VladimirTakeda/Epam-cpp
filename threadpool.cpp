@@ -9,9 +9,11 @@ ThreadPool::ThreadPool(size_t threadCount) {
                     std::unique_lock<std::mutex> lock(
                             m_queue_mutex);
 
-                    m_cv.wait(lock, [this] {
-                        return !m_tasks.empty() || stop_;
-                    });
+                    if (m_tasks.empty()){
+                        m_cv.wait(lock, [this] {
+                            return !m_tasks.empty() || stop_;
+                        });
+                    }
 
                     if (stop_ && m_tasks.empty()) {
                         return;
