@@ -1,4 +1,4 @@
-#include "DataQueue.h"
+#include "dataqueue.h"
 
 void DataQueue::sendData(toSend &&data){
     std::lock_guard<std::mutex> lock(m_guard);

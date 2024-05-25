@@ -11,7 +11,8 @@ The `Epam-cpp` package exposes next group of files to user:
 
 ### Library with the logic
 
-| File                           | Description                                                                                                                                                                                    |
-|:-------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`task.h`](task.h)             | The class **ReadTask** reads a block of bytes from ifstream and stores it in buffered_channel. The class **WriteTask** reads a block of bytes from buffered_channel and writes it to ofstream. |
-| [`threadpool.h`](threadpool.h) | The class **ThreadPool** creates n std::threads and evaluetes the tasks from queue untill it is terminated.                                                                                    |
+| File                           | Description                                                                                                                                             |
+|:-------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`task.h`](task.h)             | The class **ReadTask** reads a buffer from ifstream and pass it to WriteTask. The class **ReadTask** writes a buffer to ofstream and passes it to Reader. |
+| [`threadpool.h`](threadpool.h) | The class **ThreadPool** creates n std::threads and evaluetes the tasks from queue untill it is terminated.                                             |
+| [`dataqueue.h`](dataqueue.h)  | The class **DataQueue** is a storage that holds at most two buffers and enables to transfer buffers between Reader and Writer task.                     |

@@ -4,7 +4,7 @@
 
 #include "threadpool.h"
 #include "task.h"
-#include "DataQueue.h"
+#include "dataqueue.h"
 
 int main(int argc, char *argv[]){
     if (argc != 3){

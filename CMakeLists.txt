@@ -11,7 +11,7 @@ set(SOURCES
         main.cpp
         threadpool.cpp
         task.cpp
-        DataQueue.cpp
+        dataqueue.cpp
 )
 
 find_package(Boost COMPONENTS fiber REQUIRED)
