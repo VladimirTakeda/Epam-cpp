@@ -1,10 +1,10 @@
 #include <fstream>
 #include <iostream>
+#include <memory>
 
 #include "threadpool.h"
 #include "task.h"
-#include "ThreadSafeQueue.h"
-
+#include "DataQueue.h"
 
 int main(int argc, char *argv[]){
     if (argc != 3){
@@ -54,9 +54,14 @@ int main(int argc, char *argv[]){
         std::ofstream out(argv[2]);
         std::ifstream in(argv[1]);
 
-        ThreadSafeQueue queue;
-        std::unique_ptr<Task> read = std::make_unique<ReadTask>(in, queue);
-        std::unique_ptr<Task> write = std::make_unique<WriteTask>(out, queue);
+
+        DataQueue dataQueueFromReaderToWriter;
+        DataQueue dataQueueFromWriterToReader;
+        dataQueueFromWriterToReader.sendData(std::make_unique<Buffer>());
+        dataQueueFromWriterToReader.sendData(std::make_unique<Buffer>());
+
+        std::unique_ptr<Task> read = std::make_unique<ReadTask>(in, dataQueueFromReaderToWriter, dataQueueFromWriterToReader);
+        std::unique_ptr<Task> write = std::make_unique<WriteTask>(out, dataQueueFromReaderToWriter, dataQueueFromWriterToReader);
         auto start = std::chrono::high_resolution_clock::now();
         {
             ThreadPool pool(1);
