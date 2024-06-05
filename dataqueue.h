@@ -3,10 +3,19 @@
 #include <memory>
 #include <queue>
 #include <mutex>
+#include <semaphore.h>
 
 struct Buffer {
-    char data[1024 * 1024];
-    size_t length = 0;
+    explicit Buffer(sem_t * capture = nullptr, sem_t * release = nullptr) : m_capture(capture), m_release(release){
+        sem_wait(m_capture);
+    }
+    ~Buffer(){
+        sem_post(m_release);
+    }
+    sem_t *m_capture = nullptr;
+    sem_t *m_release = nullptr;
+    char m_data[1024 * 1024]{};
+    size_t m_length = 0;
 };
 
 typedef std::unique_ptr<Buffer> toSend;
