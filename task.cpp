@@ -12,11 +12,13 @@ ReadTask::ReadTask(std::ifstream &in, SharedMemoryWrapper &sharedMemoryWrapper) 
 }
 
 void ReadTask::Run() {
+    std::cout << "startRead\n";
     auto toSend = m_sharedMemoryWrapper.GetNext();
     while (m_in.read(toSend->m_data, BlockSize) || m_in.gcount() > 0) {
         std::size_t bytesRead = m_in.gcount();
         toSend->m_length = bytesRead;
         toSend = m_sharedMemoryWrapper.GetNext();
+        std::cout << "loopRead\n";
     }
     toSend->m_length = Empty;
     std::cout << "endRead\n";
@@ -28,10 +30,12 @@ WriteTask::WriteTask(std::ofstream &out, SharedMemoryWrapper &sharedMemoryWrappe
 }
 
 void WriteTask::Run() {
+    std::cout << "startWrite\n";
     auto toSend = m_sharedMemoryWrapper.GetNext();
     while (toSend->m_length) {
         m_out.write(toSend->m_data, toSend->m_length);
         toSend = m_sharedMemoryWrapper.GetNext();
+        std::cout << "loopWrite\n";
     }
     std::cout << "endWrite\n";
 }

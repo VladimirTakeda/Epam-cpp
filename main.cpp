@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <filesystem>
 
 #include "threadpool.h"
 #include "task.h"
@@ -27,21 +28,24 @@ int main(int argc, char *argv[]){
         std::ofstream out(argv[2]);
         std::ifstream in(argv[1]);
 
-        SharedMemoryWrapper sharedObject;
+        std::unique_ptr<SharedMemoryWrapper> sharedObject;
 
         try {
-            sharedObject = SharedMemoryWrapper(argv[3]);
+            std::cout << "name of shared memory: " << argv[3] << std::endl;
+            sharedObject = std::make_unique<SharedMemoryWrapper>(argv[3]);
         }
         catch(...){
             std::cout << "shared memory wrapper constructor fails";
         }
 
         std::unique_ptr<Task> task;
-        if (sharedObject.WhoAmI() == Type::reader){
-            task = std::make_unique<ReadTask>(in, sharedObject);
+        if (sharedObject->WhoAmI() == Type::reader){
+            std::cout << "I am reader" << std::endl;
+            task = std::make_unique<ReadTask>(in, *sharedObject);
         }
         else{
-            task = std::make_unique<WriteTask>(out, sharedObject);
+            std::cout << "I am writer" << std::endl;
+            task = std::make_unique<WriteTask>(out, *sharedObject);
         }
 
         auto start = std::chrono::high_resolution_clock::now();
