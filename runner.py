@@ -1,13 +1,9 @@
-import multiprocessing
-import os
 import subprocess
 import numpy as np
 from multiprocessing import shared_memory
 
-# Имя shared memory object
-SHM_NAME = "/shared_memory_object"
+SHM_NAME = "shared_memory_object"
 
-# Размер объекта в байтах
 SIZE = 2 * 1024 * 1024 + 100
 
 try:
@@ -22,9 +18,8 @@ except Exception as e:
     print(f"Error: {e}")
     exit(1)
 
-# Ваша команда
-command1 = "./cmake-build-debug/Epam-cpp /home/vladimir/Desktop/Epam-cpp/_720_2100169427.mp4 /home/vladimir/Desktop/Epam-cpp/out.mp4 " + SHM_NAME
-command2 = "./cmake-build-debug/Epam-cpp /home/vladimir/Desktop/Epam-cpp/_720_2100169427.mp4 /home/vladimir/Desktop/Epam-cpp/out.mp4 " + SHM_NAME
+command1 = "./cmake-build-release/Epam-cpp /home/vladimir/Desktop/Epam-cpp/_720_2100169427.mp4 /home/vladimir/Desktop/Epam-cpp/out.mp4 " + SHM_NAME
+command2 = "./cmake-build-release/Epam-cpp /home/vladimir/Desktop/Epam-cpp/_720_2100169427.mp4 /home/vladimir/Desktop/Epam-cpp/out.mp4 " + SHM_NAME
 
 process1 = subprocess.Popen(command1, shell=True)
 process2 = subprocess.Popen(command2, shell=True)
@@ -32,9 +27,6 @@ process2 = subprocess.Popen(command2, shell=True)
 process1.wait()
 process2.wait()
 
-
-
-# Закрытие shared memory object
 shm_fd.close()
 shm_fd.unlink()
 

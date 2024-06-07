@@ -5,6 +5,8 @@
 #include <semaphore.h>
 
 struct Buffer {
+    //because default constructor initilize m_length with zero
+    Buffer() {}
     char m_data[1024 * 1024]; // can't initilize, because writer need the data from shared memory
     size_t m_length; // can't initilize, bacause we need the length from shared_memory
 };
@@ -12,7 +14,6 @@ struct Buffer {
 class CustomDeleter {
 public:
     void operator()(Buffer* ptr) const {
-        std::cout << std::this_thread::get_id() << " length " << ptr->m_length << std::endl;
     }
 };
 

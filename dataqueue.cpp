@@ -3,16 +3,13 @@
 #include "dataqueue.h"
 
 SyncBuffer::SyncBuffer(void *sharedMemory, sem_t *capture, sem_t *release) {
-    std::cout << std::this_thread::get_id() << " capture " << capture << " " << sharedMemory << std::endl;
     sem_wait(capture);
     m_release = release;
-    std::cout << std::this_thread::get_id() << " buffer tr " << sharedMemory << std::endl;
     buffer = BufferPtr(new(sharedMemory) Buffer());
 }
 
 SyncBuffer::~SyncBuffer() {
     sem_post(m_release);
-    std::cout << std::this_thread::get_id() << " release " << m_release << std::endl;
 }
 
 //1 (receiveData) WRQueue pick block1 + release cv WRQueue
