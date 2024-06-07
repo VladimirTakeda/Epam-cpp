@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <filesystem>
+#include <csignal>
 
 #include "threadpool.h"
 #include "task.h"
@@ -14,20 +15,7 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
-    try {
-        if (std::filesystem::remove(argv[2])) {
-            std::cout << "File deleted successfully" << std::endl;
-        } else {
-            std::cout << "File not found or could not be deleted" << std::endl;
-        }
-    } catch (const std::filesystem::filesystem_error& e) {
-        std::cerr << "Filesystem error: " << e.what() << std::endl;
-    }
-
     {
-        std::ofstream out(argv[2]);
-        std::ifstream in(argv[1]);
-
         std::unique_ptr<SharedMemoryWrapper> sharedObject;
 
         try {
@@ -38,14 +26,30 @@ int main(int argc, char *argv[]){
             std::cout << "shared memory wrapper constructor fails";
         }
 
+        std::unique_ptr<std::ifstream> in;
+        std::unique_ptr<std::ofstream> out;
+
         std::unique_ptr<Task> task;
         if (sharedObject->WhoAmI() == Type::reader){
-            std::cout << "I am reader" << std::endl;
-            task = std::make_unique<ReadTask>(in, *sharedObject);
+            in = std::make_unique<std::ifstream>(argv[1]);
+            std::cout << std::this_thread::get_id() << " I am reader" << std::endl;
+            task = std::make_unique<ReadTask>(*in, *sharedObject);
         }
         else{
-            std::cout << "I am writer" << std::endl;
-            task = std::make_unique<WriteTask>(out, *sharedObject);
+            std::cout << std::this_thread::get_id() << " I am writer" << std::endl;
+
+            try {
+                if (std::filesystem::remove(argv[2])) {
+                    std::cout << "File deleted successfully" << std::endl;
+                } else {
+                    std::cout << "File not found or could not be deleted" << std::endl;
+                }
+            } catch (const std::filesystem::filesystem_error& e) {
+                std::cerr << "Filesystem error: " << e.what() << std::endl;
+            }
+
+            out = std::make_unique<std::ofstream>(argv[2]);
+            task = std::make_unique<WriteTask>(*out, *sharedObject);
         }
 
         auto start = std::chrono::high_resolution_clock::now();

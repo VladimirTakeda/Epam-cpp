@@ -11,7 +11,7 @@
 
 #include "dataqueue.h"
 
-constexpr int SHM_SIZE = 2 * 1024 * 1024 + 20;
+constexpr int SHM_SIZE = 2 * 1024 * 1024 + 100;
 
 // how to check if it reader or writer? //int field + one more semaphore?
 
@@ -85,6 +85,7 @@ public:
     }
 
     ~SharedMemoryWrapper(){
+        std::cout << " ~SharedMemoryWrapper" << std::endl;
         // if it's the last running process we need to close all the semaphores
         int count;
         sem_wait(m_counterSem);
@@ -124,6 +125,7 @@ private:
         std::cout << "WhoAmI start" << std::endl;
         sem_wait(m_counterSem);
         int *counter = reinterpret_cast<int*>(m_shmPtr);
+        std::cout << std::this_thread::get_id() << " WhoAmI " << *counter << std::endl;
         Type answer = static_cast<Type>(*counter % 2);
         ++(*counter);
         sem_post(m_counterSem);

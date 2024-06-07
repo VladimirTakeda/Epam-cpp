@@ -8,7 +8,7 @@ from multiprocessing import shared_memory
 SHM_NAME = "/shared_memory_object"
 
 # Размер объекта в байтах
-SIZE = 2 * 1024 * 1024 + 20
+SIZE = 2 * 1024 * 1024 + 100
 
 try:
     # Создание shared memory object
@@ -23,8 +23,8 @@ except Exception as e:
     exit(1)
 
 # Ваша команда
-command1 = "./cmake-build-release/Epam-cpp /home/vladimir/Desktop/Epam-cpp/_720_2100169427.mp4 /home/vladimir/Desktop/Epam-cpp/out.mp4 " + SHM_NAME
-command2 = "./cmake-build-release/Epam-cpp /home/vladimir/Desktop/Epam-cpp/_720_2100169427.mp4 /home/vladimir/Desktop/Epam-cpp/out.mp4 " + SHM_NAME
+command1 = "./cmake-build-debug/Epam-cpp /home/vladimir/Desktop/Epam-cpp/_720_2100169427.mp4 /home/vladimir/Desktop/Epam-cpp/out.mp4 " + SHM_NAME
+command2 = "./cmake-build-debug/Epam-cpp /home/vladimir/Desktop/Epam-cpp/_720_2100169427.mp4 /home/vladimir/Desktop/Epam-cpp/out.mp4 " + SHM_NAME
 
 process1 = subprocess.Popen(command1, shell=True)
 process2 = subprocess.Popen(command2, shell=True)
