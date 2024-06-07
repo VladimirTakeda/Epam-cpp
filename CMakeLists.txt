@@ -24,10 +24,4 @@ set(SOURCES
         SharedMemoryWrapper.cpp
 )
 
-find_package(Boost COMPONENTS fiber REQUIRED)
-
 add_executable(Epam-cpp ${SOURCES})
-
-target_include_directories(Epam-cpp PRIVATE ${BOOST_INCLUDEDIR})
-
-target_link_libraries(Epam-cpp PRIVATE Boost::boost Boost::fiber)
