@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "task.h"
 
 constexpr int BlockSize = 1024 * 1024;
