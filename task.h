@@ -1,7 +1,6 @@
 #pragma once
 
 #include <fstream>
-#include <boost/fiber/buffered_channel.hpp>
 
 #include "dataqueue.h"
 #include "SharedMemoryWrapper.h"
