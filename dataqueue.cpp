@@ -1,23 +1,18 @@
+#include <iostream>
+
 #include "dataqueue.h"
 
-void DataQueue::sendData(toSend &&data){
-    {
-        std::lock_guard<std::mutex> lock(m_guard);
-        m_storage.push(std::move(data));
-    }
-    m_condVar.notify_one();
+SyncBuffer::SyncBuffer(void *sharedMemory, sem_t *capture, sem_t *release) {
+    std::cout << std::this_thread::get_id() << " capture " << capture << " " << sharedMemory << std::endl;
+    sem_wait(capture);
+    m_release = release;
+    std::cout << std::this_thread::get_id() << " buffer tr " << sharedMemory << std::endl;
+    buffer = BufferPtr(new(sharedMemory) Buffer());
 }
 
-toSend DataQueue::receiveData() {
-    std::unique_lock<std::mutex> lock(m_guard);
-    if (m_storage.empty()){
-        m_condVar.wait(lock, [&]() {
-            return !m_storage.empty();
-        });
-    }
-    auto data = std::move(m_storage.front());
-    m_storage.pop();
-    return data;
+SyncBuffer::~SyncBuffer() {
+    sem_post(m_release);
+    std::cout << std::this_thread::get_id() << " release " << m_release << std::endl;
 }
 
 //1 (receiveData) WRQueue pick block1 + release cv WRQueue

@@ -1,13 +1,6 @@
 #pragma once
 
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <errno.h>
-#include <unistd.h>
-#include <semaphore.h>
-
 #include <string>
-#include <exception>
 
 #include "dataqueue.h"
 
@@ -30,110 +23,23 @@ constexpr std::string_view SEM_NAME_COUNTER = "counter_sem";
 
 enum class Type : uint8_t {
     reader = 0,
-    writer = 1
+    writer = 1,
+    none = 2
 };
 
 class SharedMemoryWrapper {
 public:
     SharedMemoryWrapper() = default;
-    explicit SharedMemoryWrapper(char *name) {
-        m_shmFd = shm_open(name, O_RDWR, 0666);
-        if (m_shmFd < 0) {
-            std::cout << "constructor shm_open";
-            printf("shm_open() failed %s (%d)\n", strerror(errno), errno);
-            throw std::bad_alloc();
-        }
-
-        m_shmPtr = static_cast<char *>(mmap(0, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, m_shmFd, 0));
-        if (m_shmPtr == MAP_FAILED) {
-            std::cout << "constructor mmap" << std::endl;
-            perror("mmap");
-            throw std::bad_alloc();
-        }
-
-        m_counterSem = sem_open(SEM_NAME_COUNTER.data(), O_CREAT, S_IRUSR | S_IWUSR, 1);
-        if (m_counterSem == SEM_FAILED) {
-            std::cout << "pisec" << std::endl;
-        }
-
-        sem_t *writer_sem = sem_open(SEM_NAME_WRITER.data(), O_CREAT, S_IRUSR | S_IWUSR, 0);
-        if (writer_sem == SEM_FAILED) {
-            std::cout << "pisec" << std::endl;
-        }
-        sem_t *reader_sem = sem_open(SEM_NAME_READER.data(), O_CREAT, S_IRUSR | S_IWUSR, 2);
-        if (reader_sem == SEM_FAILED) {
-            std::cout << "pisec" << std::endl;
-        }
-
-        SetCurrType();
-
-        if (WhoAmI() == Type::reader){
-            m_captureSem = reader_sem;
-            m_releaseSem = writer_sem;
-        }
-        else{
-            m_captureSem = writer_sem;
-            m_releaseSem = reader_sem;
-        }
-        std::cout << "constructor finished" << std::endl;
-    }
-
-    toSend GetNext(){
-        auto buffer = toSend(new(m_shmPtr + sizeof(int) + currIdx * sizeof(Buffer)) Buffer(m_captureSem, m_releaseSem));
-        currIdx = 1 - currIdx;
-        return buffer;
-    }
-
-    ~SharedMemoryWrapper(){
-        std::cout << " ~SharedMemoryWrapper" << std::endl;
-        // if it's the last running process we need to close all the semaphores
-        int count;
-        sem_wait(m_counterSem);
-        int *counter = reinterpret_cast<int*>(m_shmPtr);
-        --(*counter);
-        count = *counter;
-        sem_post(m_counterSem);
-
-        if (count == 0) {
-            std::cout << "Close semaphores";
-            sem_close(m_releaseSem);
-            sem_close(m_captureSem);
-            sem_close(m_counterSem);
-
-            sem_unlink(SEM_NAME_READER.data());
-            sem_unlink(SEM_NAME_WRITER.data());
-            sem_unlink(SEM_NAME_COUNTER.data());
-        }
-
-        if (munmap(m_shmPtr, SHM_SIZE) == -1) {
-            perror("munmap");
-            exit(1);
-        }
-
-        if (close(m_shmFd) == -1) {
-            perror("close");
-            exit(1);
-        }
-    }
-
-    [[nodiscard]] Type WhoAmI() const {
-        return type;
-    }
+    explicit SharedMemoryWrapper(const char *SharedObjName);
+    toSend GetNext();
+    ~SharedMemoryWrapper();
+    [[nodiscard]] Type WhoAmI() const;
 
 private:
-    void SetCurrType(){
-        std::cout << "WhoAmI start" << std::endl;
-        sem_wait(m_counterSem);
-        int *counter = reinterpret_cast<int*>(m_shmPtr);
-        std::cout << std::this_thread::get_id() << " WhoAmI " << *counter << std::endl;
-        Type answer = static_cast<Type>(*counter % 2);
-        ++(*counter);
-        sem_post(m_counterSem);
-        std::cout << "WhoAmI finished" << std::endl;
-        type = answer;
-    }
+    void SetCurrType();
 
-    Type type;
+private:
+    Type type = Type::none;
     int currIdx = 0;
     sem_t *m_counterSem = nullptr;
     sem_t *m_captureSem = nullptr;
