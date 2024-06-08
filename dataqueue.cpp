@@ -3,7 +3,14 @@
 #include "dataqueue.h"
 
 SyncBuffer::SyncBuffer(void *sharedMemory, sem_t *capture, sem_t *release) {
-    sem_wait(capture);
+    timespec ts{};
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += 5;  // Установим тайм-аут на 5 секунд вперед
+
+    sem_timedwait(capture, &ts);
+    if (errno == ETIMEDOUT)
+        throw std::runtime_error("semaphore timeout occurred!");
+
     m_release = release;
     buffer = BufferPtr(new(sharedMemory) Buffer());
 }
@@ -11,14 +18,3 @@ SyncBuffer::SyncBuffer(void *sharedMemory, sem_t *capture, sem_t *release) {
 SyncBuffer::~SyncBuffer() {
     sem_post(m_release);
 }
-
-//1 (receiveData) WRQueue pick block1 + release cv WRQueue
-//2 (sendData) to RWQueue + set cv RWQueue
-//3 (receiveData) WRQueue pick block2 + release cv WRQueue
-
-/*int k = 1;
-int z = 7;
-//timeline
-std::atomic_int e = 24; //barrier
-double d = 5.;
-k += z;*/

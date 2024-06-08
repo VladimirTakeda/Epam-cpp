@@ -3,11 +3,11 @@
 #include <memory>
 #include <filesystem>
 #include <csignal>
+#include <thread>
 
-#include "threadpool.h"
 #include "task.h"
 #include "dataqueue.h"
-#include "SharedMemoryWrapper.h"
+#include "sharedmemorymanager.h"
 
 int main(int argc, char *argv[]){
     if (argc != 4){
@@ -16,11 +16,11 @@ int main(int argc, char *argv[]){
     }
 
     {
-        std::unique_ptr<SharedMemoryWrapper> sharedObject;
+        std::unique_ptr<SharedMemoryManager> sharedObject;
 
         try {
             std::cout << "name of shared memory: " << argv[3] << std::endl;
-            sharedObject = std::make_unique<SharedMemoryWrapper>(argv[3]);
+            sharedObject = std::make_unique<SharedMemoryManager>(argv[3]);
         }
         catch(...){
             std::cout << "shared memory wrapper constructor fails";
@@ -54,7 +54,9 @@ int main(int argc, char *argv[]){
 
         auto start = std::chrono::high_resolution_clock::now();
         {
-            task->Run();
+            if (!task->Run()) {
+                std::cout << "Runtime error" << std::endl;
+            }
         }
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> duration = end - start;

@@ -18,10 +18,9 @@ message(STATUS "CMAKE_CXX_FLAGS:" ${CMAKE_CXX_FLAGS})
 
 set(SOURCES
         main.cpp
-        threadpool.cpp
         task.cpp
         dataqueue.cpp
-        SharedMemoryWrapper.cpp
+        sharedmemorymanager.cpp
 )
 
 add_executable(Epam-cpp ${SOURCES})

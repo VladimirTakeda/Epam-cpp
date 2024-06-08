@@ -3,32 +3,32 @@
 #include <fstream>
 
 #include "dataqueue.h"
-#include "SharedMemoryWrapper.h"
+#include "sharedmemorymanager.h"
 
 class Task{
 public:
-    virtual void Run() = 0;
+    virtual bool Run() = 0;
     virtual ~Task();
 };
 
 /// ifstream Reader
 class ReadTask : public Task {
 public:
-    explicit ReadTask(std::ifstream &in, SharedMemoryWrapper &sharedMemoryWrapper);
+    explicit ReadTask(std::ifstream &in, SharedMemoryManager &sharedMemoryWrapper);
     /// @brief takes free buffer, reads data, pass to Writer
-    void Run() override;
+    bool Run() override;
 private:
     std::ifstream &m_in;
-    SharedMemoryWrapper &m_sharedMemoryWrapper;
+    SharedMemoryManager &m_sharedMemoryWrapper;
 };
 
 /// ofstream Writer
 class WriteTask : public Task {
 public:
-    explicit WriteTask(std::ofstream &out, SharedMemoryWrapper &sharedMemoryWrapper);
+    explicit WriteTask(std::ofstream &out, SharedMemoryManager &sharedMemoryWrapper);
     /// @brief takes free buffer, writes data, pass to Reader
-    void Run() override;
+    bool Run() override;
 private:
     std::ofstream &m_out;
-    SharedMemoryWrapper &m_sharedMemoryWrapper;
+    SharedMemoryManager &m_sharedMemoryWrapper;
 };

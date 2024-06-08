@@ -6,9 +6,9 @@
 #include <unistd.h>
 #include <semaphore.h>
 
-#include "SharedMemoryWrapper.h"
+#include "sharedmemorymanager.h"
 
-SharedMemoryWrapper::SharedMemoryWrapper(const char *SharedObjName) {
+SharedMemoryManager::SharedMemoryManager(const char *SharedObjName) {
     m_shmFd = shm_open(SharedObjName, O_RDWR, 0666);
     if (m_shmFd < 0) {
         throw std::bad_alloc();
@@ -38,14 +38,19 @@ SharedMemoryWrapper::SharedMemoryWrapper(const char *SharedObjName) {
     }
 }
 
-toSend SharedMemoryWrapper::GetNext() {
-    toSend buffer = std::make_unique<SyncBuffer>(m_shmPtr + sizeof(int) + currIdx * sizeof(Buffer), m_captureSem,
-                                                 m_releaseSem);
-    currIdx = 1 - currIdx;
-    return buffer;
+toSend SharedMemoryManager::GetNext() {
+    try {
+        toSend buffer = std::make_unique<SyncBuffer>(m_shmPtr + sizeof(int) + currIdx * sizeof(Buffer), m_captureSem,
+                                             m_releaseSem);
+        currIdx = 1 - currIdx;
+        return buffer;
+    }
+    catch(...){
+        return nullptr;
+    }
 }
 
-SharedMemoryWrapper::~SharedMemoryWrapper() {
+SharedMemoryManager::~SharedMemoryManager() {
     std::cout << " ~SharedMemoryWrapper" << std::endl;
     // if it's the last running process we need to close all the semaphores
     sem_wait(m_counterSem);
@@ -76,11 +81,11 @@ SharedMemoryWrapper::~SharedMemoryWrapper() {
     }
 }
 
-Type SharedMemoryWrapper::WhoAmI() const {
+Type SharedMemoryManager::WhoAmI() const {
     return type;
 }
 
-void SharedMemoryWrapper::SetCurrType() {
+void SharedMemoryManager::SetCurrType() {
     sem_wait(m_counterSem);
     int *counter = reinterpret_cast<int *>(m_shmPtr);
     type = static_cast<Type>(*counter % 2);

@@ -35,9 +35,9 @@ def download_file(url, local_filename):
             with open(local_filename, 'wb') as file:
                 for chunk in response.iter_content(chunk_size=8192):
                     file.write(chunk)
-        print(f"Файл был успешно скачан и сохранен как {local_filename}")
+        print(f"File has been downloaded and saved as {local_filename}")
     else:
-        print(f"Файл {local_filename} уже существует, скачивание пропущено.")
+        print(f"File {local_filename} already exists, skip downloading.")
 
 url = "https://hd.trn.su/720/2100169427.mp4?md5=h3rzwagskVzQZV2qT1neUQ&time=1717809174&d=1"
 local_filename = "downloaded_video.mp4"
@@ -48,10 +48,10 @@ command1 = f"{args.binary} {args.projectDir}/{local_filename} {args.projectDir}/
 command2 = f"{args.binary} {args.projectDir}/{local_filename} {args.projectDir}/out.mp4 " + SHM_NAME
 
 process1 = subprocess.Popen(command1, shell=True)
-process2 = subprocess.Popen(command2, shell=True)
+#process2 = subprocess.Popen(command2, shell=True)
 
 process1.wait()
-process2.wait()
+#process2.wait()
 
 shm_fd.close()
 shm_fd.unlink()

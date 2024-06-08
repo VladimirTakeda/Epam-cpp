@@ -27,15 +27,21 @@ enum class Type : uint8_t {
     none = 2
 };
 
-class SharedMemoryWrapper {
+/// A class to manipulate shared memory object
+class SharedMemoryManager {
 public:
-    SharedMemoryWrapper() = default;
-    explicit SharedMemoryWrapper(const char *SharedObjName);
+    SharedMemoryManager() = default;
+    /// @brief opens semaphores, link shared memory in this process, set the process type (reader/writer)
+    explicit SharedMemoryManager(const char *SharedObjName);
+    /// @brief return next data buffer from shared memory
     toSend GetNext();
-    ~SharedMemoryWrapper();
+    /// @brief decrement the number of active processes, unlink shared memory object and close semaphore if nesessary
+    ~SharedMemoryManager();
+    /// @brief return the type of current process (reader/writer)
     [[nodiscard]] Type WhoAmI() const;
 
 private:
+    /// @brief define who the currect proccess is (reader/writer)
     void SetCurrType();
 
 private:
