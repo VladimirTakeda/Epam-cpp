@@ -6,7 +6,7 @@
 
 struct Buffer {
     char data[1024 * 1024];
-    size_t length = 0;
+    uint32_t length = 0;
 };
 
 class CustomDeleter {

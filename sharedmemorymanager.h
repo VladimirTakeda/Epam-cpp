@@ -17,8 +17,6 @@ constexpr int SHM_SIZE = 2 * 1024 * 1024 + 100;
 // Natural alignment, for example, on a word boundary at 0x1004. The ARM compiler normally aligns variables and pads structures so that these items are accessed efficiently using LDR and STR instructions.
 // Natural alignment is when an object is aligned to its size. For example, a 32-bit integer is naturally aligned when it is 4-byte aligned. For most types on most architectures, natural alignment is the only requirement. For example, on Linux/x86-64, the ABI requires only natural alignment: int is 4-byte aligned, long and pointers are 8-byte aligned.
 
-constexpr std::string_view SEM_NAME_WRITER = "writer_sem";
-constexpr std::string_view SEM_NAME_READER = "reader_sem";
 constexpr std::string_view SEM_NAME_COUNTER = "counter_sem";
 constexpr std::string_view FROM_READER_TO_WRITER_PIPE_NAME = "/dev/shm/from_reader_to_writer_pipe";
 constexpr std::string_view FROM_WRITER_TO_READER_PIPE_NAME = "/dev/shm/from_writer_to_reader_pipe";
@@ -42,9 +40,9 @@ public:
     /// @brief return the type of current process (reader/writer)
     [[nodiscard]] Type WhoAmI() const;
 
-    int GetFromReaderToWriterPipe() const;
-    int GetFromWriterToReaderPipe() const;
-    char *GetSharedMemoryPtr() const;
+    [[nodiscard]] int GetFromReaderToWriterPipe() const;
+    [[nodiscard]] int GetFromWriterToReaderPipe() const;
+    [[nodiscard]] char *GetSharedMemoryPtr() const;
 
 private:
     /// @brief define who the currect proccess is (reader/writer)
@@ -54,8 +52,6 @@ private:
     Type type = Type::none;
     int currIdx = 0;
     sem_t *m_counterSem = nullptr;
-    sem_t *m_captureSem = nullptr;
-    sem_t *m_releaseSem = nullptr;
     char* m_shmPtr{};
     int m_shmFd{};
     int m_namedPipeFromReaderToWriter{};

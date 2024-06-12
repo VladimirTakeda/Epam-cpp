@@ -31,7 +31,6 @@ int main(int argc, char *argv[]){
         std::unique_ptr<SharedMemoryManager> sharedObject;
 
         try {
-            std::cout << "name of shared memory: " << argv[3] << std::endl;
             sharedObject = std::make_unique<SharedMemoryManager>(argv[3]);
         }
         catch(...){

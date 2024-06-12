@@ -22,10 +22,8 @@ SharedMemoryManager::SharedMemoryManager(const char *SharedObjName) {
     }
 
     m_counterSem = sem_open(SEM_NAME_COUNTER.data(), O_CREAT, S_IRUSR | S_IWUSR, 1);
-    sem_t *writer_sem = sem_open(SEM_NAME_WRITER.data(), O_CREAT, S_IRUSR | S_IWUSR, 0);
-    sem_t *reader_sem = sem_open(SEM_NAME_READER.data(), O_CREAT, S_IRUSR | S_IWUSR, 2);
 
-    if (m_counterSem == SEM_FAILED || writer_sem == SEM_FAILED || reader_sem == SEM_FAILED) {
+    if (m_counterSem == SEM_FAILED) {
         throw std::logic_error("failed to open semaphore");
     }
 
@@ -40,9 +38,6 @@ SharedMemoryManager::SharedMemoryManager(const char *SharedObjName) {
     SetCurrType();
 
     if (WhoAmI() == Type::reader) {
-        m_captureSem = reader_sem;
-        m_releaseSem = writer_sem;
-
         m_namedPipeFromReaderToWriter = open(FROM_READER_TO_WRITER_PIPE_NAME.data(), O_WRONLY);
         if (m_namedPipeFromReaderToWriter == -1) {
             throw std::logic_error("failed to open pipe");
@@ -54,9 +49,6 @@ SharedMemoryManager::SharedMemoryManager(const char *SharedObjName) {
         }
 
     } else {
-        m_captureSem = writer_sem;
-        m_releaseSem = reader_sem;
-
         m_namedPipeFromReaderToWriter = open(FROM_READER_TO_WRITER_PIPE_NAME.data(), O_RDONLY);
         if (m_namedPipeFromReaderToWriter == -1) {
             throw std::logic_error("failed to open pipe");
@@ -86,12 +78,8 @@ SharedMemoryManager::~SharedMemoryManager() {
 
     if (count == 0) {
         std::cout << "Close semaphores";
-        sem_close(m_releaseSem);
-        sem_close(m_captureSem);
         sem_close(m_counterSem);
 
-        sem_unlink(SEM_NAME_READER.data());
-        sem_unlink(SEM_NAME_WRITER.data());
         sem_unlink(SEM_NAME_COUNTER.data());
 
         close(m_namedPipeFromWriterToReader);

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include "task.h"
 
@@ -24,7 +25,6 @@ void ReadTask::Run() {
     }
     toSend->length = Empty;
     m_dataQueueFromReaderToWriter.sendData(std::move(toSend));
-    std::cout << "endRead\n";
 }
 
 WriteTask::WriteTask(std::ofstream &out, DataQueue &dataQueueFromReaderToWriter, DataQueue &dataQueueFromWriterToReader) : m_out(out),
@@ -39,5 +39,4 @@ void WriteTask::Run() {
         m_dataQueueFromWriterToReader.sendData(std::move(toSend));
         toSend = m_dataQueueFromReaderToWriter.receiveData();
     }
-    std::cout << "endWrite\n";
 }
