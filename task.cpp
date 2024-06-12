@@ -16,6 +16,7 @@ void ReadTask::Run() {
     while (m_in.read(toSend->data, BlockSize) || m_in.gcount() > 0) {
         std::size_t bytesRead = m_in.gcount();
         toSend->length = bytesRead;
+
         m_dataQueueFromReaderToWriter.sendData(std::move(toSend));
         toSend = m_dataQueueFromWriterToReader.receiveData();
     }

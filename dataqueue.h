@@ -9,11 +9,18 @@ struct Buffer {
     size_t length = 0;
 };
 
-typedef std::unique_ptr<Buffer> toSend;
+class CustomDeleter {
+public:
+    void operator()(Buffer* ptr) const {
+    }
+};
+
+typedef std::unique_ptr<Buffer, CustomDeleter> toSend;
 
 /// A thread-safe data storage to send and receive buffers
 class DataQueue{
 public:
+    explicit DataQueue(int pipeId, char *shared_memory);
     /// @brief I am sending data from to
     void sendData(toSend &&data);
 
@@ -21,9 +28,8 @@ public:
     toSend receiveData();
 
 protected:
-    std::queue<toSend> m_storage;
-    std::mutex m_guard;
-    std::condition_variable m_condVar;
+    int m_pipeId;
+    char *m_shared_memory;
     // I never use two mutexes in the scope of one class
     // I am using a mutex to protect only instance of my class
     // [optional] if i am using method of another class under my guard I am very possible doing deadlock

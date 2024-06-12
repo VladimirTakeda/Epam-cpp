@@ -1,23 +1,26 @@
 #include "dataqueue.h"
 
+#include <iostream>
+#include <thread>
+
+DataQueue::DataQueue(int pipeId, char *shared_memory) : m_pipeId(pipeId), m_shared_memory(shared_memory){
+
+}
+
 void DataQueue::sendData(toSend &&data){
-    {
-        std::lock_guard<std::mutex> lock(m_guard);
-        m_storage.push(std::move(data));
+    Buffer *ptr = data.get();
+    size_t diff = reinterpret_cast<char *>(ptr) - m_shared_memory;
+    if (int size = write(m_pipeId, &diff, sizeof(diff)); size != sizeof(diff)) {
+        throw std::logic_error("failed to write pipe");
     }
-    m_condVar.notify_one();
 }
 
 toSend DataQueue::receiveData() {
-    std::unique_lock<std::mutex> lock(m_guard);
-    if (m_storage.empty()){
-        m_condVar.wait(lock, [&]() {
-            return !m_storage.empty();
-        });
+    size_t diff = 0;
+    if (int size = read(m_pipeId, &diff, sizeof(diff)); size != sizeof(diff)) {
+        throw std::logic_error("failed to read pipe");
     }
-    auto data = std::move(m_storage.front());
-    m_storage.pop();
-    return data;
+    return toSend(reinterpret_cast<Buffer *>(m_shared_memory + diff));
 }
 
 //1 (receiveData) WRQueue pick block1 + release cv WRQueue
