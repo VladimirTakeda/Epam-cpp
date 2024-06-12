@@ -1,7 +1,6 @@
 #pragma once
 
 #include <fstream>
-#include <boost/fiber/buffered_channel.hpp>
 
 #include "dataqueue.h"
 
@@ -33,22 +32,4 @@ private:
     std::ofstream &m_out;
     DataQueue &m_dataQueueFromReaderToWriter;
     DataQueue &m_dataQueueFromWriterToReader;
-};
-
-class ReadTaskBoost : public Task {
-public:
-    explicit ReadTaskBoost(std::ifstream &in, boost::fibers::buffered_channel<std::vector<char>> &chan);
-    void Run() override ;
-private:
-    std::ifstream &m_in;
-    boost::fibers::buffered_channel<std::vector<char>> &m_chan;
-};
-
-class WriteTaskBoost : public Task {
-public:
-    explicit WriteTaskBoost(std::ofstream &out, boost::fibers::buffered_channel<std::vector<char>> &chan);
-    void Run() override;
-private:
-    std::ofstream &m_out;
-    boost::fibers::buffered_channel<std::vector<char>> &m_chan;
 };
