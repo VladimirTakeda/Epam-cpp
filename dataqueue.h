@@ -3,6 +3,7 @@
 #include <memory>
 #include <queue>
 #include <mutex>
+#include <condition_variable>
 
 struct Buffer {
     char data[1024 * 1024];
@@ -24,7 +25,4 @@ protected:
     std::queue<toSend> m_storage;
     std::mutex m_guard;
     std::condition_variable m_condVar;
-    // I never use two mutexes in the scope of one class
-    // I am using a mutex to protect only instance of my class
-    // [optional] if i am using method of another class under my guard I am very possible doing deadlock
 };

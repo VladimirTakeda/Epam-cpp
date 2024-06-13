@@ -1,0 +1,6 @@
+    1) I never use two mutexes in the scope of one class
+    2) I am using a mutex, semaphores and other sync elements to protect only instance of my class
+    3) According to the rule 2) all classes that contain NAMES sync element should live untill the end of process (we have to close them at the end of the programm)
+    4) [optional] if i am using method of another class under my guard I am very possible doing deadlock
+    5) I write comments only in English
+    6) I use as little as possible numbers of sync elements
