@@ -15,6 +15,7 @@ struct Buffer {
 class CustomDeleter {
 public:
     void operator()(Buffer* ptr) const {
+        ptr->~Buffer();
     }
 };
 
@@ -31,3 +32,6 @@ struct SyncBuffer {
 };
 
 typedef std::unique_ptr<SyncBuffer> toSend;
+
+
+// I write comments only in English
