@@ -4,3 +4,7 @@
     4) [optional] if i am using method of another class under my guard I am very possible doing deadlock
     5) I write comments only in English
     6) I use as little as possible numbers of sync elements
+    7) Don't do like this 
+        toSend.reset();
+        toSend = m_sharedMemoryWrapper.GetNext();
+    because the other programmer can forget to invoke toSend.reset()
