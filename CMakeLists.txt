@@ -21,6 +21,8 @@ set(SOURCES
         task.cpp
         dataqueue.cpp
         sharedmemorymanager.cpp
+        threadpool.cpp
+        util.cpp
 )
 
 add_executable(Epam-cpp ${SOURCES})

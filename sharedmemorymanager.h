@@ -32,9 +32,13 @@ class SharedMemoryManager {
 public:
     SharedMemoryManager() = default;
     /// @brief opens semaphores, link shared memory in this process, set the process type (reader/writer)
-    explicit SharedMemoryManager(const char *SharedObjName);
+    explicit SharedMemoryManager(const std::string& semaphorePreffixName, const char *SharedObjName);
     /// @brief return next data buffer from shared memory
-    toSend GetNext();
+    toSend GetBufferByIndex(size_t index);
+
+    [[nodiscard]] char* GetQueueByIndex(size_t index) const;
+
+    bool OpenSharedMemory(const std::string& semaphorePreffixName, const char *SharedObjName);
     /// @brief decrement the number of active processes, unlink shared memory object and close semaphore if nesessary
     ~SharedMemoryManager();
     /// @brief return the type of current process (reader/writer)
@@ -50,6 +54,9 @@ private:
     sem_t *m_counterSem = nullptr;
     sem_t *m_captureSem = nullptr;
     sem_t *m_releaseSem = nullptr;
+
+    sem_t *m_writerSem = nullptr;
+    sem_t *m_memorySem = nullptr;
     char* m_shmPtr{};
     int m_shmFd{};
 };
