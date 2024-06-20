@@ -6,7 +6,10 @@
 
 #include <semaphore.h>
 
+#include "util.h"
+
 /// A buffer (on shared memory) for processes communication
+/// Placement new
 struct Buffer {
     //because default constructor initilize m_length with zero
     Buffer() {}
@@ -23,54 +26,51 @@ public:
 
 typedef std::unique_ptr<Buffer, CustomDeleter> toSend;
 
-class TimedDataQueue{
+/// Thread-safe queue for thread communication
+class DataQueue{
 public:
-    explicit TimedDataQueue(size_t timeoutSec);
     /// @brief Send an index
-    void sendIndex(size_t Index);
+    void sendIndex(uint32_t Index);
 
-    /// @brief Request an index or ping (if timeout)
-    size_t receiveIndexOrPing();
+    /// @brief Request an index
+    uint32_t receiveIndex();
 
 protected:
-    std::queue<size_t> m_storage;
+    std::deque<uint32_t> m_storage;
     std::mutex m_guard;
     std::condition_variable m_condVar;
-    size_t m_timeoutSec;
 };
 
+/// Shared memory integer block wrapper
+class SharedQueueBuffer {
+public:
+    SharedQueueBuffer(uint32_t *memory, const std::string& readCaptureName, const std::string& readReleaseName);
+    /// @brief Get value using semaphore sync
+    [[nodiscard]] uint32_t ReadValue() const;
+    /// @brief Set value using semaphore sync
+    void WriteValue(uint32_t value) const;
+
+private:
+    uint32_t *m_memory;
+    SemWrapper m_readSem;
+    SemWrapper m_writeSem;
+};
+
+// const don't forget
+
+// decompositiom to small details
+
+/// DataQueue for process communication
 class InterProcessDataQueue{
 public:
-    /// TODO: overloaded constructor, may be use Builder pattern
-    explicit InterProcessDataQueue(size_t timeoutSec, char* readQueueMemory, int readMemorySize,
-        char* writeQueueMemory, int writeMemorySize, const std::string& readCaptureName, const std::string& readReleaseName,
-        const std::string& writeCaptureName, const std::string& writeReleaseName);
+    explicit InterProcessDataQueue(SharedQueueBuffer& readQueue, SharedQueueBuffer& writeQueue);
     /// @brief I am sending data from to
-    void sendData(int32_t Index);
+    void sendData(uint32_t Index) const;
 
     /// @brief I am requesting next data for processing (skip ping, but reset timeout in that case)
-    int32_t receiveData();
+    [[nodiscard]] uint32_t receiveData() const;
 
-    /// @brief Free all resources that has been captured in constructor (semaphores)
-    ~InterProcessDataQueue();
-
-protected:
-    size_t m_timeoutSec;
-
-    char* m_readQueueMemory;
-    int m_readMemorySize;
-
-    char* m_writeQueueMemory;
-    int m_writeMemorySize;
-
-    std::string m_readCaptureSemName;
-    std::string m_readReleaseSemName;
-    std::string m_writCaptureSemName;
-    std::string m_writReleaseSemName;
-
-    sem_t *m_readCaptureSem;
-    sem_t *m_readReleaseSem;
-
-    sem_t *m_writeCaptureSem;
-    sem_t *m_writeReleaseSem;
+private:
+    SharedQueueBuffer& m_readQueue;
+    SharedQueueBuffer& m_writeQueue;
 };

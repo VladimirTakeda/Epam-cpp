@@ -1,10 +1,28 @@
 #include <filesystem>
 #include <iostream>
+#include <utility>
+#include <cstring>
+
+#include <fcntl.h>
 
 #include "util.h"
 
-bool IsPing(size_t value){
-    return std::numeric_limits<size_t>::max() == value;
+SemWrapper::SemWrapper(std::string semName, int initialValue) : m_semName(std::move(semName)) {
+    m_semaphore = sem_open(m_semName.data(), O_CREAT, S_IRUSR | S_IWUSR, initialValue);
+    if (m_semaphore == SEM_FAILED) {
+        throw std::logic_error(std::string("Error creating/opening semaphore: ") + strerror(errno));
+    }
+}
+
+/// TODO: who is responsible for eresure?
+/// In default situation, when everything is file it should be reader because reader acts first
+SemWrapper::~SemWrapper() {
+    sem_close(m_semaphore);
+    //sem_unlink(m_semName.data());
+}
+
+sem_t* SemWrapper::Get() const {
+    return m_semaphore;
 }
 
 void EraseFile(const char *fileName) {

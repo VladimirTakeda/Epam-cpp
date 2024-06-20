@@ -2,10 +2,9 @@
 
 #include <thread>
 #include <vector>
-#include <functional>
 #include <condition_variable>
-#include <mutex>
 #include <queue>
+#include <stop_token>
 
 #include "task.h"
 
@@ -26,6 +25,7 @@ private:
     std::queue<std::unique_ptr<Task>> m_tasks;
     std::mutex m_queue_mutex;
     std::condition_variable m_cv;
-    bool stop_ = false;
+    bool m_stopThreads = false;
+    std::stop_source m_stopTasksToken;
     std::vector<std::thread> m_threads;
 };

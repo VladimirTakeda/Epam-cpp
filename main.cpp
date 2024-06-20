@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <csignal>
 #include <thread>
+#include <functional>
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -43,38 +44,59 @@ int main(int argc, char *argv[]){
     }
 
     {
-        const std::string semPrefix = std::string(argv[1]) + argv[2] + argv[3];
+        const std::string semPrefix = std::string(argv[3]);
 
         std::unique_ptr<SharedMemoryManager> sharedObject = std::make_unique<SharedMemoryManager>(semPrefix, argv[3]);
+        if (sharedObject->WhoAmI() == Type::none) {
+            std::cout << std::this_thread::get_id() << " I don't know who am I" << std::endl;
+            return 0;
+        }
 
         std::unique_ptr<Task> IOtask;
         std::unique_ptr<Task> Notifier;
+        std::unique_ptr<Task> HealthChecker;
+        std::unique_ptr<Task> HealthPing;
 
-        InterProcessDataQueue dataQueueFromReaderToWriter(1, sharedObject->GetQueueByIndex(1), sizeof(uint32_t),
-            sharedObject->GetQueueByIndex(0), sizeof(uint32_t),
-            semPrefix + '5', semPrefix + '6',semPrefix + '3', semPrefix + '4');
-        InterProcessDataQueue dataQueueFromWriterToReader(2 , sharedObject->GetQueueByIndex(0), sizeof(uint32_t),
-            sharedObject->GetQueueByIndex(1), sizeof(uint32_t),
-            semPrefix + '3', semPrefix + '4',semPrefix + '5', semPrefix + '6');
+        SharedQueueBuffer firstBuf(sharedObject->GetQueueByIndex(0), semPrefix + '3', semPrefix + '4');
+        SharedQueueBuffer secondBuf(sharedObject->GetQueueByIndex(0), semPrefix + '5', semPrefix + '6');
+
+        InterProcessDataQueue dataQueueFromReaderToWriter(firstBuf, secondBuf);
+        InterProcessDataQueue dataQueueFromWriterToReader(secondBuf, firstBuf);
+
+        //can't move to inner bacause the tasks are alive till the end of the programm
+        std::unique_ptr<DataQueue> fromNotifierToReader;
+        std::unique_ptr<DataQueue> fromNotifierToWriter;
 
         if (sharedObject->WhoAmI() == Type::reader){
             std::cout << std::this_thread::get_id() << " I am reader" << std::endl;
-            TimedDataQueue fromReaderToNofirier(1);
-            Notifier = std::make_unique<PeriodicNotifierTask>(1, fromReaderToNofirier, dataQueueFromReaderToWriter);
-            IOtask = std::make_unique<ReadTask>(argv[1], *sharedObject, fromReaderToNofirier, dataQueueFromWriterToReader);
+            fromNotifierToReader = std::make_unique<DataQueue>();
+
+            fromNotifierToReader->sendIndex(0);
+            fromNotifierToReader->sendIndex(1);
+
+            HealthChecker = std::make_unique<HealthCheckerTask>(2, semPrefix + '7');
+            HealthPing = std::make_unique<HealthPingTask>(1, semPrefix + '8');
+            Notifier = std::make_unique<NotifierTask>(*fromNotifierToReader, dataQueueFromReaderToWriter);
+            IOtask = std::make_unique<ReadTask>(argv[1], *sharedObject, *fromNotifierToReader, dataQueueFromWriterToReader);
         }
         else{
+            /// need to push 2 free buffers to reader
             std::cout << std::this_thread::get_id() << " I am writer" << std::endl;
             EraseFile(argv[2]);
-            TimedDataQueue fromWriterToNofirier(2);
-            Notifier = std::make_unique<PeriodicNotifierTask>(2, fromWriterToNofirier, dataQueueFromWriterToReader);
-            IOtask = std::make_unique<WriteTask>(argv[2], *sharedObject, fromWriterToNofirier, dataQueueFromReaderToWriter);
+            fromNotifierToWriter = std::make_unique<DataQueue>();
+
+            HealthChecker = std::make_unique<HealthCheckerTask>(2, semPrefix + '8');
+            HealthPing = std::make_unique<HealthPingTask>(1, semPrefix + '7');
+            Notifier = std::make_unique<NotifierTask>(*fromNotifierToWriter, dataQueueFromWriterToReader);
+            IOtask = std::make_unique<WriteTask>(argv[2], *sharedObject, *fromNotifierToWriter, dataQueueFromReaderToWriter);
         }
 
         MeasureTime([&]() {
-            ThreadPool pool(1);
+            ThreadPool pool(3);
             pool.enqueue(std::move(IOtask));
             pool.enqueue(std::move(Notifier));
+            pool.enqueue(std::move(HealthChecker));
+            pool.enqueue(std::move(HealthPing));
         });
     }
 }

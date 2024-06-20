@@ -16,11 +16,17 @@ SharedMemoryManager::SharedMemoryManager(const std::string& semaphorePreffixName
             type = Type::reader;
         }
         else {
+            std::cout << std::this_thread::get_id() << " may be writer " << std::endl;
             static std::string writerName = semaphorePreffixName + '2';
-            m_writerSem = sem_open(writerName.c_str(), O_CREAT, 0666, 1);
+            m_writerSem = sem_open(writerName.c_str(), O_CREAT, S_IRUSR | S_IWUSR, 1);
             if (m_writerSem != SEM_FAILED) {
                 type = Type::writer;
             }
+        }
+
+        m_shmPtr = static_cast<char *>(mmap(0, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, m_shmFd, 0));
+        if (m_shmPtr == MAP_FAILED) {
+            throw std::bad_alloc();
         }
     }
     catch (...) {
@@ -29,7 +35,7 @@ SharedMemoryManager::SharedMemoryManager(const std::string& semaphorePreffixName
 }
 
 bool SharedMemoryManager::OpenSharedMemory(const std::string& semaphorePreffixName, const char *SharedMemoryName) {
-    static std::string semaphoreName = semaphorePreffixName + '1';
+    std::string semaphoreName = semaphorePreffixName + '1';
 
     bool is_creator = false;
 
@@ -50,28 +56,33 @@ bool SharedMemoryManager::OpenSharedMemory(const std::string& semaphorePreffixNa
             attempts++;
             sleep(1);
         } else {
+            std::cout << std::this_thread::get_id() << " 123 " << std::endl;
             throw std::logic_error(std::string("Error creating/opening shared memory: ") + strerror(errno));
         }
     }
 
-    m_memorySem = sem_open(semaphoreName.c_str(), O_CREAT, 0666, 1);
+    m_memorySem = sem_open(semaphoreName.data(), O_CREAT, S_IRUSR | S_IWUSR, 1);
 
     if (m_memorySem == SEM_FAILED) {
+        std::cout << std::this_thread::get_id() << " 124 " << semaphoreName << std::endl;
         throw std::logic_error(std::string("Error creating/opening semaphore: ") + strerror(errno));
     }
 
     if (sem_wait(m_memorySem) == -1) {
+        std::cout << std::this_thread::get_id() << " 125 " << std::endl;
         throw std::logic_error(std::string("Error waiting on semaphore: ") + strerror(errno));
     }
 
     try {
         if (is_creator) {
             if (ftruncate(m_shmFd, SIZE) == -1) {
+                std::cout << std::this_thread::get_id() << " 126 " << std::endl;
                 throw std::runtime_error(strerror(errno));
             }
         }
     } catch (const std::exception &ex) {
         sem_post(m_memorySem);
+        std::cout << std::this_thread::get_id() << " 127 " << std::endl;
         throw std::logic_error(std::string("Error setting size for shared memory: ") + ex.what());
     }
 
@@ -82,35 +93,18 @@ bool SharedMemoryManager::OpenSharedMemory(const std::string& semaphorePreffixNa
 
 toSend SharedMemoryManager::GetBufferByIndex(size_t index) {
     // add out of bound check
-    toSend buffer = toSend(new(m_shmPtr + sizeof(int) + index * sizeof(Buffer)) Buffer());
-    currIdx = 1 - currIdx;
+    toSend buffer = toSend(new(m_shmPtr + sizeof(uint32_t) * 2 + index * sizeof(Buffer)) Buffer());
     return buffer;
 }
 
-char* SharedMemoryManager::GetQueueByIndex(size_t index) const{
-    static_assert(index > 2);
-    return m_shmPtr + sizeof(int) * index;
+uint32_t* SharedMemoryManager::GetQueueByIndex(const size_t index) const{
+    return reinterpret_cast<uint32_t*>(m_shmPtr + sizeof(uint32_t) * index);
 }
 
 SharedMemoryManager::~SharedMemoryManager() {
     std::cout << " ~SharedMemoryWrapper" << std::endl;
-    // if it's the last running process we need to close all the semaphores
-    sem_wait(m_counterSem);
-    int *counter = reinterpret_cast<int *>(m_shmPtr);
-    --(*counter);
-    int count = *counter;
-    sem_post(m_counterSem);
 
-    if (count == 0) {
-        std::cout << "Close semaphores";
-        sem_close(m_releaseSem);
-        sem_close(m_captureSem);
-        sem_close(m_counterSem);
-
-        sem_unlink(SEM_NAME_READER.data());
-        sem_unlink(SEM_NAME_WRITER.data());
-        sem_unlink(SEM_NAME_COUNTER.data());
-    }
+    std::cout << "Close semaphores" << std::endl;
 
     if (m_memorySem) {
         sem_close(m_memorySem);
@@ -133,12 +127,4 @@ SharedMemoryManager::~SharedMemoryManager() {
 
 Type SharedMemoryManager::WhoAmI() const {
     return type;
-}
-
-void SharedMemoryManager::SetCurrType() {
-    sem_wait(m_counterSem);
-    int *counter = reinterpret_cast<int *>(m_shmPtr);
-    type = static_cast<Type>(*counter % 2);
-    ++(*counter);
-    sem_post(m_counterSem);
 }

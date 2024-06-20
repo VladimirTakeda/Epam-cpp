@@ -11,11 +11,11 @@ ThreadPool::ThreadPool(size_t threadCount) {
 
                     if (m_tasks.empty()){
                         m_cv.wait(lock, [this] {
-                            return !m_tasks.empty() || stop_;
+                            return !m_tasks.empty() || m_stopThreads;
                         });
                     }
 
-                    if (stop_ && m_tasks.empty()) {
+                    if (m_stopThreads && m_tasks.empty()) {
                         return;
                     }
 
@@ -23,7 +23,7 @@ ThreadPool::ThreadPool(size_t threadCount) {
                     m_tasks.pop();
                 }
 
-                task->Run();
+                task->Run(m_stopTasksToken);
             }
         });
     }
@@ -44,7 +44,7 @@ void ThreadPool::runInMainThread() {
             m_tasks.pop();
         }
 
-        task->Run();
+        task->Run(m_stopTasksToken);
     }
 }
 
@@ -52,7 +52,7 @@ ThreadPool::~ThreadPool() {
     runInMainThread();
     {
         std::unique_lock<std::mutex> lock(m_queue_mutex);
-        stop_ = true;
+        m_stopThreads = true;
     }
 
     m_cv.notify_all();
