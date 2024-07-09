@@ -1,42 +1,60 @@
 #pragma once
 
-#include <memory>
-#include <condition_variable>
-#include <queue>
-
-#include <semaphore.h>
-
 #include "util.h"
+
+#include <condition_variable>
+#include <memory>
+#include <queue>
+#include <semaphore.h>
 
 /// A buffer (on shared memory) for processes communication
 /// Placement new
+/// Try to connect it with the index
 struct Buffer {
-    //because default constructor initilize m_length with zero
-    Buffer() {}
+    // because default constructor initilize m_length with zero
+    Buffer(size_t index) : m_index(index){}
+    [[nodiscard]] char* Data() noexcept { return m_data; }
+    size_t& Size() noexcept { return m_length; }
+    uint32_t Index() const noexcept { return m_index; }
+
+protected:
     char m_data[1024 * 1024]; // can't initilize, because writer need the data from shared memory
     size_t m_length; // can't initilize, bacause we need the length from shared_memory
+    uint32_t m_index = 0;
+};
+
+enum MessageType : uint8_t {
+    I_AM_ALIVE    = 1, // send if we can't take the data from dataqueue
+    I_SEE_IT      = 2,
+    I_HAVE_A_DATA = 3, // comes with unique message id and buffer index
+    I_SAW_A_DATA  = 4, // comes with the same message id as in I_HAVE_A_DATA
+    I_HAVE_DONE   = 5,
+};
+
+struct Message {
+    MessageType type;
+    uint64_t messageId;
+    uint32_t bufferIndex;
 };
 
 class CustomDeleter {
 public:
-    void operator()(Buffer* ptr) const {
-        ptr->~Buffer();
-    }
+    void operator()(Buffer* ptr) const { ptr->~Buffer(); }
 };
 
 typedef std::unique_ptr<Buffer, CustomDeleter> toSend;
 
 /// Thread-safe queue for thread communication
-class DataQueue{
+class DataQueue {
 public:
     /// @brief Send an index
-    void sendIndex(uint32_t Index);
+    void sendBuffer(toSend buffer);
 
     /// @brief Request an index
-    uint32_t receiveIndex();
+    toSend receiveBuffer();
 
 protected:
-    std::deque<uint32_t> m_storage;
+    std::deque<toSend> m_storage;
     std::mutex m_guard;
     std::condition_variable m_condVar;
 };
@@ -44,14 +62,14 @@ protected:
 /// Shared memory integer block wrapper
 class SharedQueueBuffer {
 public:
-    SharedQueueBuffer(uint32_t *memory, const std::string& readCaptureName, const std::string& readReleaseName);
+    SharedQueueBuffer(Message* memory, const std::string& readCaptureName, const std::string& readReleaseName);
     /// @brief Get value using semaphore sync
-    [[nodiscard]] uint32_t ReadValue() const;
+    [[nodiscard]] Message ReadValue() const;
     /// @brief Set value using semaphore sync
-    void WriteValue(uint32_t value) const;
+    void WriteValue(Message) const;
 
 private:
-    uint32_t *m_memory;
+    Message* m_memory;
     SemWrapper m_readSem;
     SemWrapper m_writeSem;
 };
@@ -61,16 +79,18 @@ private:
 // decompositiom to small details
 
 /// DataQueue for process communication
-class InterProcessDataQueue{
+class InterProcessDataQueue {
 public:
-    explicit InterProcessDataQueue(SharedQueueBuffer& readQueue, SharedQueueBuffer& writeQueue);
-    /// @brief I am sending data from to
-    void sendData(uint32_t Index) const;
+    InterProcessDataQueue(SharedQueueBuffer& readQueue, SharedQueueBuffer& writeQueue);
+    /// @brief I am finished with the buffer and want to pass it to another process
+    void sendData(Message buffer) const;
 
-    /// @brief I am requesting next data for processing (skip ping, but reset timeout in that case)
-    [[nodiscard]] uint32_t receiveData() const;
+    /// @brief I want to recieve a buffer
+    [[nodiscard]] Message receiveData() const;
 
 private:
-    SharedQueueBuffer& m_readQueue;
-    SharedQueueBuffer& m_writeQueue;
+    SharedQueueBuffer& m_readBuffer;
+    SharedQueueBuffer& m_writeBuffer;
 };
+
+// write message queue

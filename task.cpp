@@ -1,131 +1,183 @@
-#include <iostream>
-#include <thread>
-#include <stdexcept>
-
 #include "task.h"
 
+#include <iostream>
+#include <stdexcept>
+#include <thread>
+
 constexpr int BlockSize = 1024 * 1024;
-constexpr size_t Empty = 0;
+constexpr size_t Empty  = 0;
 
-Task::~Task() = default;
-
-
-ReadTask::ReadTask(const char * const fileName, SharedMemoryManager &sharedMemoryWrapper, DataQueue &dataQueueFromNotifierToIO, InterProcessDataQueue& dataQueueFromIOToNotifier)
-: m_in(fileName), m_sharedMemoryWrapper(sharedMemoryWrapper), m_dataQueueFromIOToNotifier(dataQueueFromIOToNotifier), m_dataQueueFromNotifierToIO(dataQueueFromNotifierToIO){
-
+size_t Task::ID()
+{
+    return m_ID;
 }
 
-void ReadTask::Run(std::stop_source stopSource) {
-    std::cout << std::this_thread::get_id() << " start reading " << std::endl;
-    uint32_t index = m_dataQueueFromNotifierToIO.receiveIndex();
-    auto toSend = m_sharedMemoryWrapper.GetBufferByIndex(index);
-    std::cout << std::this_thread::get_id() << " start reading got buffer " << index << std::endl;
-    while (m_in.read(toSend->m_data, BlockSize) || m_in.gcount() > 0) {
-        std::cout << std::this_thread::get_id() << " reader try to get token " << std::endl;
-        std::stop_token stoken = stopSource.get_token();
-        if (stoken.stop_requested())
-            break;
-        std::cout << std::this_thread::get_id() << " got token " << std::endl;
-        std::size_t bytesRead = m_in.gcount();
-        std::cout << std::this_thread::get_id() << " butesRead "  << bytesRead << std::endl;
-        toSend->m_length = bytesRead;
-        m_dataQueueFromIOToNotifier.sendData(index);
-        index = m_dataQueueFromNotifierToIO.receiveIndex();
-        toSend = m_sharedMemoryWrapper.GetBufferByIndex(index);
-        std::cout << std::this_thread::get_id() << " loop reading "  << index << std::endl;
+/// ifstream Reader
+///
+/// reader can read 2 buffers from the beginning independently from writer
+class ReadTask final : public Task {
+public:
+    explicit ReadTask(const char* const fileName, DataQueue& dataQueueFromEventToIO, DataQueue& dataQueueFromIOToEvent)
+        : m_in(fileName)
+        , m_dataQueueFromEventToIO(dataQueueFromEventToIO)
+        , m_dataQueueFromIOToEvent(dataQueueFromIOToEvent)
+    {
     }
-    // TODO: remove this hack for stop NotifierTask
-    m_dataQueueFromIOToNotifier.sendData(index);
-    stopSource.request_stop();
-    std::cout << std::this_thread::get_id() << " end reading "  << index << std::endl;
-}
-
-WriteTask::WriteTask(const char * const fileName, SharedMemoryManager &sharedMemoryWrapper, DataQueue &dataQueueFromNotifierToIO, InterProcessDataQueue& dataQueueFromIOToNotifier)
-: m_out(fileName), m_sharedMemoryWrapper(sharedMemoryWrapper), m_dataQueueFromIOToNotifier(dataQueueFromIOToNotifier), m_dataQueueFromNotifierToIO(dataQueueFromNotifierToIO){
-
-}
-
-void WriteTask::Run(std::stop_source stopSource) {
-    std::cout << std::this_thread::get_id() << " start writing " << std::endl;
-    uint32_t index = m_dataQueueFromNotifierToIO.receiveIndex();
-    auto toSend = m_sharedMemoryWrapper.GetBufferByIndex(index);
-    std::cout << std::this_thread::get_id() << " start writing got buffer " << index << std::endl;
-    while (toSend->m_length) {
-        std::cout << std::this_thread::get_id() << " writer try to get token " << std::endl;
-        std::stop_token stoken = stopSource.get_token();
-        if (stoken.stop_requested())
-            break;
-        m_out.write(toSend->m_data, toSend->m_length);
-        m_dataQueueFromIOToNotifier.sendData(index);
-        toSend = m_sharedMemoryWrapper.GetBufferByIndex(m_dataQueueFromNotifierToIO.receiveIndex());
-        std::cout << std::this_thread::get_id() << " loop writing " << index << std::endl;
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    stopSource.request_stop();
-    std::cout << std::this_thread::get_id() << " end writing "  << index << std::endl;
-}
-
-NotifierTask::NotifierTask(DataQueue &dataQueueFromNotifierToIO, InterProcessDataQueue& dataQueueFromIOToNotifier)
-: m_dataQueueFromNotifierToIO(dataQueueFromNotifierToIO), m_dataQueueFromIOToNotifier(dataQueueFromIOToNotifier) {
-}
-
-void NotifierTask::Run(std::stop_source stopSource) {
-    uint32_t toSend = m_dataQueueFromIOToNotifier.receiveData();
-    std::cout << std::this_thread::get_id() << " send index before loop " << toSend << std::endl;
-    while (true) {
-        std::cout << "we got a new index " << toSend << std::endl;
-        m_dataQueueFromNotifierToIO.sendIndex(toSend);
-
-        std::stop_token stoken = stopSource.get_token();
-        if (stoken.stop_requested())
-            break;
-
-        // we need to stop wait here
-        toSend = m_dataQueueFromIOToNotifier.receiveData();
-        std::cout << std::this_thread::get_id() << " send index inside loop " << toSend << std::endl;
-    }
-    std::cout << std::this_thread::get_id() << " end Notifier "  << std::endl;
-}
-
-HealthPingTask::HealthPingTask(uint32_t timeoutSec, const std::string& pingSemName) : m_timeoutSec(timeoutSec), m_pingSem(pingSemName, 0){
-
-}
-void HealthPingTask::Run(std::stop_source stopSource) {
-    while (true) {
-        std::stop_token stoken = stopSource.get_token();
-        if (stoken.stop_requested())
-            break;
-        sem_post(m_pingSem.Get());
-        std::this_thread::sleep_for(std::chrono::seconds(m_timeoutSec));
-    }
-    std::cout << std::this_thread::get_id() << " end HealthPingTask "  << std::endl;
-}
-
-HealthCheckerTask::HealthCheckerTask(uint32_t timeoutSec, const std::string& pingSemName) :  m_timeoutSec(timeoutSec), m_pingSem(pingSemName, 0) {
-
-}
-
-void HealthCheckerTask::Run(std::stop_source stopSource) {
-    while (true) {
-        std::stop_token stoken = stopSource.get_token();
-        if (stoken.stop_requested())
-            break;
-        timespec ts{};
-        if (clock_gettime(CLOCK_REALTIME, &ts) == -1){
-            throw std::logic_error(std::string("Failed to set up timer"));
+    /// @brief takes free buffer index from other process, if it's valid do read task and push the index to Notifier via
+    /// TimedDataQueue
+    void Run() override
+    {
+        std::cout << std::this_thread::get_id() << " start reading " << std::endl;
+        auto toSend = m_dataQueueFromEventToIO.receiveBuffer();
+        while (toSend && (m_in.read(toSend->Data(), BlockSize) || m_in.gcount() > 0)) {
+            std::size_t bytesRead = m_in.gcount();
+            std::cout << std::this_thread::get_id() << " butesRead " << bytesRead << std::endl;
+            toSend->Size() = bytesRead;
+            m_dataQueueFromIOToEvent.sendBuffer(std::move(toSend));
+            toSend = m_dataQueueFromEventToIO.receiveBuffer();
+            std::cout << std::this_thread::get_id() << " loop reading " << std::endl;
         }
-
-        ts.tv_sec += m_timeoutSec;
-
-        auto s = sem_timedwait(m_pingSem.Get(), &ts);
-
-        if (s == -1)
-        {
-            std::cout << std::this_thread::get_id() << " HealthCheckerTask timeout "  << std::endl;
-            if (errno == ETIMEDOUT)
-                stopSource.request_stop();
-            stopSource.request_stop();
-        }
+        m_dataQueueFromIOToEvent.sendBuffer(nullptr);
+        std::cout << std::this_thread::get_id() << " end reading " << std::endl;
     }
-    std::cout << std::this_thread::get_id() << " end HealthCheckerTask "  << std::endl;
+
+private:
+    std::ifstream m_in;
+
+    DataQueue& m_dataQueueFromEventToIO;
+    DataQueue& m_dataQueueFromIOToEvent;
+};
+
+/// ofstream Writer
+class WriteTask final : public Task {
+public:
+    WriteTask(const char* const fileName, DataQueue& dataQueueFromEventToIO, DataQueue& dataQueueFromIOToEvent)
+        : m_out(fileName)
+        , m_dataQueueFromEventToIO(dataQueueFromEventToIO)
+        , m_dataQueueFromIOToEvent(dataQueueFromIOToEvent)
+    {
+    }
+    /// @brief takes free buffer index from other process, if it's valid do write task and push the index to Notifier via
+    /// TimedDataQueue
+    void Run() override
+    {
+        std::cout << std::this_thread::get_id() << " start writing " << std::endl;
+        auto toSend = m_dataQueueFromEventToIO.receiveBuffer();
+        while (toSend && toSend->Size()) {
+            std::cout << std::this_thread::get_id() << " writer try to get token " << std::endl;
+            m_out.write(toSend->Data(), toSend->Size());
+            m_dataQueueFromIOToEvent.sendBuffer(std::move(toSend));
+            toSend = m_dataQueueFromEventToIO.receiveBuffer();
+            std::cout << std::this_thread::get_id() << " loop writing " << std::endl;
+        }
+        m_dataQueueFromIOToEvent.sendBuffer(nullptr);
+        std::cout << std::this_thread::get_id() << " end writing " << std::endl;
+    }
+
+private:
+    /// @brief erase destination in case of error
+    /// don't create method for one invoke
+    void CleanUp(){};
+
+private:
+    std::ofstream m_out;
+
+    DataQueue& m_dataQueueFromEventToIO;
+    DataQueue& m_dataQueueFromIOToEvent;
+};
+
+/// Accumulate all the messages from another process to DataQueue
+class EventReaderTask final : public Task {
+public:
+    explicit EventReaderTask(SharedMemoryManager& sharedMemoryManager, DataQueue& dataQueueFromNotifierToIO,
+                             InterProcessDataQueue& dataQueueFromSharedMemoryToEventReader)
+        : m_sharedMemory(sharedMemoryManager)
+        , m_dataQueueFromEventReaderToIO(dataQueueFromNotifierToIO)
+        , m_dataQueueFromSharedMemoryToEventReader(dataQueueFromSharedMemoryToEventReader)
+    {
+    }
+    /// @brief grab the data from message queue and puts it to IOQueue
+    void Run() override
+    {
+        while (true) {
+            Message message = m_dataQueueFromSharedMemoryToEventReader.receiveData();
+
+            if (message.type == I_HAVE_A_DATA) {
+                m_dataQueueFromEventReaderToIO.sendBuffer(m_sharedMemory.GetBufferByIndex(message.bufferIndex));
+            }
+            if (message.type == I_HAVE_DONE) {
+                m_dataQueueFromEventReaderToIO.sendBuffer(nullptr);
+                bool res = m_stopSource.request_stop();
+                if (!res) {
+                    std::cout << std::this_thread::get_id() << " can't stop the threads " << std::endl;
+                }
+                break;
+            }
+            if (message.type == I_AM_ALIVE) {
+                continue;
+            }
+        }
+        std::cout << std::this_thread::get_id() << " end read Notifier " << std::endl;
+    }
+
+private:
+    std::stop_source m_stopSource;
+    SharedMemoryManager& m_sharedMemory;
+    DataQueue& m_dataQueueFromEventReaderToIO;
+    InterProcessDataQueue& m_dataQueueFromSharedMemoryToEventReader;
+};
+
+/// Accumulate all the messages from another process to DataQueue
+class EventWriterTask final : public Task {
+public:
+    explicit EventWriterTask(DataQueue& dataQueueFromIOToEventWriter,
+                             InterProcessDataQueue& dataQueueFromEventWriterToSharedMemory)
+        : m_dataQueueFromIOToEventWriter(dataQueueFromIOToEventWriter)
+        , m_dataQueueFromEventWriterToSharedMemory(dataQueueFromEventWriterToSharedMemory)
+    {
+    }
+    /// @brief grab the data from message queue and puts it to IOQueue
+    void Run() override
+    {
+        while (true) {
+            auto Buffer = m_dataQueueFromIOToEventWriter.receiveBuffer();
+            if (Buffer && Buffer->Data())
+                m_dataQueueFromEventWriterToSharedMemory.sendData(Message{I_HAVE_A_DATA, ++messageId, Buffer->Index()});
+            else {
+                m_dataQueueFromEventWriterToSharedMemory.sendData(Message{I_HAVE_DONE, ++messageId, 0});
+                break;
+            }
+        }
+        std::cout << std::this_thread::get_id() << " end write Notifier " << std::endl;
+    }
+
+private:
+    size_t messageId = 0;
+    DataQueue& m_dataQueueFromIOToEventWriter;
+    InterProcessDataQueue& m_dataQueueFromEventWriterToSharedMemory;
+};
+
+std::unique_ptr<Task> CreateWriteTask(const char* const fileName, DataQueue& dataQueueFromEventToIO,
+                                      DataQueue& dataQueueFromIOToEvent)
+{
+    return std::make_unique<WriteTask>(fileName, dataQueueFromEventToIO, dataQueueFromIOToEvent);
+}
+
+std::unique_ptr<Task> CreateReadTask(const char* const fileName, DataQueue& dataQueueFromEventToIO,
+                                     DataQueue& dataQueueFromIOToEvent)
+{
+    return std::make_unique<ReadTask>(fileName, dataQueueFromEventToIO, dataQueueFromIOToEvent);
+}
+
+std::unique_ptr<Task> CreateEventReaderTask(SharedMemoryManager& sharedMemoryManager, DataQueue& dataQueueFromNotifierToIO,
+                                            InterProcessDataQueue& dataQueueFromSharedMemoryToEventReader)
+{
+    return std::make_unique<EventReaderTask>(sharedMemoryManager, dataQueueFromNotifierToIO,
+                                             dataQueueFromSharedMemoryToEventReader);
+}
+
+std::unique_ptr<Task> CreateEventWriterTask(DataQueue& dataQueueFromIOToEventWriter,
+                                            InterProcessDataQueue& dataQueueFromEventWriterToSharedMemory)
+{
+    return std::make_unique<EventWriterTask>(dataQueueFromIOToEventWriter, dataQueueFromEventWriterToSharedMemory);
 }

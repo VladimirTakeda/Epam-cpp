@@ -23,7 +23,7 @@ ThreadPool::ThreadPool(size_t threadCount) {
                     m_tasks.pop();
                 }
 
-                task->Run(m_stopTasksToken);
+                task->Run();
             }
         });
     }
@@ -44,7 +44,7 @@ void ThreadPool::runInMainThread() {
             m_tasks.pop();
         }
 
-        task->Run(m_stopTasksToken);
+        task->Run();
     }
 }
 
