@@ -31,11 +31,11 @@ public:
         auto toSend = m_dataQueueFromEventToIO.receiveBuffer();
         while (toSend && (m_in.read(toSend->Data(), BlockSize) || m_in.gcount() > 0)) {
             std::size_t bytesRead = m_in.gcount();
-            std::cout << std::this_thread::get_id() << " butesRead " << bytesRead << std::endl;
+            // std::cout << std::this_thread::get_id() << " butesRead " << bytesRead << std::endl;
             toSend->Size() = bytesRead;
             m_dataQueueFromIOToEvent.sendBuffer(std::move(toSend));
             toSend = m_dataQueueFromEventToIO.receiveBuffer();
-            std::cout << std::this_thread::get_id() << " loop reading " << std::endl;
+            // std::cout << std::this_thread::get_id() << " loop reading " << std::endl;
         }
         m_dataQueueFromIOToEvent.sendBuffer(nullptr);
         std::cout << std::this_thread::get_id() << " end reading " << std::endl;
@@ -64,11 +64,10 @@ public:
         std::cout << std::this_thread::get_id() << " start writing " << std::endl;
         auto toSend = m_dataQueueFromEventToIO.receiveBuffer();
         while (toSend && toSend->Size()) {
-            std::cout << std::this_thread::get_id() << " writer try to get token " << std::endl;
             m_out.write(toSend->Data(), toSend->Size());
             m_dataQueueFromIOToEvent.sendBuffer(std::move(toSend));
             toSend = m_dataQueueFromEventToIO.receiveBuffer();
-            std::cout << std::this_thread::get_id() << " loop writing " << std::endl;
+            // std::cout << std::this_thread::get_id() << " loop writing " << std::endl;
         }
         m_dataQueueFromIOToEvent.sendBuffer(nullptr);
         std::cout << std::this_thread::get_id() << " end writing " << std::endl;
