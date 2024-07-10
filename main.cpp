@@ -1,8 +1,8 @@
-#include "dataqueue.h"
-#include "sharedmemorymanager.h"
-#include "task.h"
-#include "threadpool.h"
-#include "util.h"
+#include "src/dataqueue/sharedbuffer.h"
+#include "src/sharedmemorymanager.h"
+#include "src/task.h"
+#include "src/threadpool.h"
+#include "src/util.h"
 
 #include <csignal>
 #include <fcntl.h>
@@ -40,10 +40,24 @@ void MeasureTime(const std::function<void()>& func)
     std::cout << "Queue: " << std::chrono::duration_cast<std::chrono::microseconds>(duration).count() << " microsec" << std::endl;
 }
 
-int main(int argc, char* argv[])
+bool ValidateArguments(int argc, char* argv[])
 {
     if (argc != 4) {
         std::cerr << "wrong arguments count" << std::endl;
+        return false;
+    }
+
+    if (!std::filesystem::is_regular_file(argv[1])) {
+        std::cerr << "wrong source file path" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+int main(int argc, char* argv[])
+{
+    if (!ValidateArguments(argc, argv)) {
         return 1;
     }
 

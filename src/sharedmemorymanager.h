@@ -1,18 +1,14 @@
 #pragma once
 
-#include "dataqueue.h"
+#include "dataqueue/sharedbuffer.h"
+#include "util.h"
 
 #include <string>
 
+class SemWrapper;
+
 constexpr int SHM_SIZE = 2 * 1024 * 1024 + 100;
 
-// how to check if it reader or writer? //int field + one more semaphore?
-
-// how to protect from parallel reading and writing
-// how to organize processes syncronization
-// sem_open - atomic operation
-// sem_writer = sem_open(SEM_NAME_WRITER, O_CREAT, 0666, 1); - last value for closed or opened semaphore
-// sem_timedwait for timeout
 // what is mac os stack size - 8176 byte
 // Natural alignment, for example, on a word boundary at 0x1004. The ARM compiler normally aligns variables and pads structures so
 // that these items are accessed efficiently using LDR and STR instructions. Natural alignment is when an object is aligned to its
@@ -36,14 +32,13 @@ public:
     bool OpenSharedMemory(const std::string& semaphorePreffixName, const char* SharedObjName);
     /// @brief decrement the number of active processes, unlink shared memory object and close semaphore if nesessary
     ~SharedMemoryManager();
-    /// @brief return the type of current process (reader/writer)
+    /// @brief return the type of current process (reader/writer/unknown)
     [[nodiscard]] Type WhoAmI() const;
 
 private:
-    Type type   = Type::none;
-    int currIdx = 0;
+    Type type = Type::none;
 
-    sem_t* m_writerSem = nullptr;
+    std::unique_ptr<SemWrapper> m_writerSem;
     std::unique_ptr<SemWrapper> m_memorySem;
     char* m_shmPtr{};
     int m_shmFd{};

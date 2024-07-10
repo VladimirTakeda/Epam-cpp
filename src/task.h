@@ -1,13 +1,11 @@
 #pragma once
 
-#include "dataqueue.h"
+#include "dataqueue/interprocessdataqueue.h"
+#include "dataqueue/interthreaddataqueue.h"
+#include "dataqueue/sharedbuffer.h"
 #include "sharedmemorymanager.h"
 
 #include <fstream>
-
-class WriteTask;
-class ReadTask;
-class NotifierTask;
 
 class Task {
 public:
@@ -29,5 +27,3 @@ std::unique_ptr<Task> CreateEventReaderTask(SharedMemoryManager& sharedMemoryMan
                                             InterProcessDataQueue& dataQueueFromSharedMemoryToEventReader);
 std::unique_ptr<Task> CreateEventWriterTask(DataQueue& dataQueueFromIOToEventWriter,
                                             InterProcessDataQueue& dataQueueFromEventWriterToSharedMemory);
-
-/// I want to create a class factory

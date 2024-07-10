@@ -9,20 +9,24 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-else()
+elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+else ()
     message(FATAL_ERROR "Unsupported compilation mode")
-endif()
+endif ()
 
 message(STATUS "CMAKE_CXX_FLAGS:" ${CMAKE_CXX_FLAGS})
 
 set(SOURCES
         main.cpp
-        task.cpp
-        dataqueue.cpp
-        sharedmemorymanager.cpp
-        threadpool.cpp
-        util.cpp
+        src/task.cpp
+        src/dataqueue/sharedbuffer.cpp
+        src/sharedmemorymanager.cpp
+        src/threadpool.cpp
+        src/util.cpp
+        src/dataqueue/interprocessdataqueue.cpp
+        src/dataqueue/interprocessdataqueue.h
+        src/dataqueue/interthreaddataqueue.cpp
+        src/dataqueue/interthreaddataqueue.h
 )
 
 add_executable(Epam-cpp ${SOURCES})

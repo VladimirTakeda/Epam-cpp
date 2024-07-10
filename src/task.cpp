@@ -12,6 +12,8 @@ size_t Task::ID()
     return m_ID;
 }
 
+constexpr nullptr_t StopSignal = nullptr;
+
 /// ifstream Reader
 ///
 /// reader can read 2 buffers from the beginning independently from writer
@@ -37,7 +39,7 @@ public:
             toSend = m_dataQueueFromEventToIO.receiveBuffer();
             // std::cout << std::this_thread::get_id() << " loop reading " << std::endl;
         }
-        m_dataQueueFromIOToEvent.sendBuffer(nullptr);
+        m_dataQueueFromIOToEvent.sendBuffer(StopSignal);
         std::cout << std::this_thread::get_id() << " end reading " << std::endl;
     }
 
@@ -69,7 +71,7 @@ public:
             toSend = m_dataQueueFromEventToIO.receiveBuffer();
             // std::cout << std::this_thread::get_id() << " loop writing " << std::endl;
         }
-        m_dataQueueFromIOToEvent.sendBuffer(nullptr);
+        m_dataQueueFromIOToEvent.sendBuffer(StopSignal);
         std::cout << std::this_thread::get_id() << " end writing " << std::endl;
     }
 
@@ -99,10 +101,10 @@ public:
     void Run() override
     {
         while (true) {
-            std::optional<Message> message = m_dataQueueFromSharedMemoryToEventReader.receiveData();
-            if (!message) {
+            auto [message, isTimeout] = m_dataQueueFromSharedMemoryToEventReader.receiveDataWithTimeOut();
+            if (isTimeout) {
                 std::cout << std::this_thread::get_id() << " timeOut occured " << std::endl;
-                m_dataQueueFromEventReaderToIO.sendBuffer(nullptr);
+                m_dataQueueFromEventReaderToIO.sendBuffer(StopSignal);
                 break;
             }
 
@@ -110,7 +112,7 @@ public:
                 m_dataQueueFromEventReaderToIO.sendBuffer(m_sharedMemory.GetBufferByIndex(message->bufferIndex));
             }
             if (message->type == I_HAVE_DONE) {
-                m_dataQueueFromEventReaderToIO.sendBuffer(nullptr);
+                m_dataQueueFromEventReaderToIO.sendBuffer(StopSignal);
                 break;
             }
             if (message->type == I_AM_ALIVE) {
@@ -121,7 +123,6 @@ public:
     }
 
 private:
-    std::stop_source m_stopSource;
     SharedMemoryManager& m_sharedMemory;
     DataQueue& m_dataQueueFromEventReaderToIO;
     InterProcessDataQueue& m_dataQueueFromSharedMemoryToEventReader;

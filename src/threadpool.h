@@ -1,12 +1,11 @@
 #pragma once
 
-#include <thread>
-#include <vector>
+#include "task.h"
+
 #include <condition_variable>
 #include <queue>
-#include <stop_token>
-
-#include "task.h"
+#include <thread>
+#include <vector>
 
 /// A ThreadPool with side threads and main thread to execute tasks
 /// Not thread-safe (Use only with main thread)
@@ -17,15 +16,16 @@ public:
     /// @brief invoke runInMainThread and then waiting for side threads has been finished
     ~ThreadPool();
     /// @brief add a new task to queue
-    void enqueue(std::unique_ptr<Task> &&task);
+    void enqueue(std::unique_ptr<Task>&& task);
+
 private:
     /// @brief after all the tasks has been added - executes the tasks in main thread as well
     void runInMainThread();
+
 private:
     std::queue<std::unique_ptr<Task>> m_tasks;
     std::mutex m_queue_mutex;
     std::condition_variable m_cv;
     bool m_stopThreads = false;
-    std::stop_source m_stopTasksToken;
     std::vector<std::thread> m_threads;
 };

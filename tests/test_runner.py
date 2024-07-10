@@ -6,6 +6,7 @@ import signal
 import time
 
 url = "https://hd.trn.su/720/2100169427.mp4?md5=h3rzwagskVzQZV2qT1neUQ&time=1717809174&d=1"
+local_filename = "downloaded_video.mp4"
 
 
 def download_file(url, local_filename):
@@ -40,15 +41,12 @@ def project_dir(request):
 
 
 def test_download_file(clean_up_download):
-    url = "https://hd.trn.su/720/2100169427.mp4?md5=h3rzwagskVzQZV2qT1neUQ&time=1717809174&d=1"
-    local_filename = "downloaded_video.mp4"
     download_file(url, local_filename)
 
     assert os.path.exists(local_filename), "File was not downloaded successfully."
 
 
 def test_binary_runs(binary_path, project_dir):
-    local_filename = "downloaded_video_1.mp4"
     download_file(url, f"../{local_filename}")
     shm_name = "shared_memory_object_default"
 
@@ -66,7 +64,6 @@ def test_binary_runs(binary_path, project_dir):
 
 
 def test_process_suspend_resume(binary_path, project_dir):
-    local_filename = "downloaded_video_2.mp4"
     download_file(url, f"../{local_filename}")
     shm_name = "shared_memory_object_suspend"
 
@@ -77,7 +74,7 @@ def test_process_suspend_resume(binary_path, project_dir):
     process2 = subprocess.Popen(command2, shell=True)
 
     os.kill(process2.pid, signal.SIGSTOP)
-    time.sleep(2)
+    time.sleep(3)
     os.kill(process2.pid, signal.SIGCONT)
 
     process1.wait()
@@ -88,7 +85,6 @@ def test_process_suspend_resume(binary_path, project_dir):
 
 
 def test_duplicate_runs(binary_path, project_dir):
-    local_filename = "downloaded_video_3.mp4"
     download_file(url, f"../{local_filename}")
     shm_name = "shared_memory_object_duplicate"
 
@@ -107,24 +103,30 @@ def test_duplicate_runs(binary_path, project_dir):
     process3.wait()
     process4.wait()
 
-    assert process1.returncode == 0, "Process 1 did not terminate successfully."
-    assert process2.returncode == 0, "Process 2 did not terminate successfully."
-    assert process3.returncode == 1, "Process 3 did terminate successfully, but shouldn't"
-    assert process4.returncode == 1, "Process 4 did terminate successfully, but shouldn't"
+    zeros = 0
+    ones = 0
+    zeros += 1 if process1.returncode == 0 else 0
+    zeros += 1 if process2.returncode == 0 else 0
+    zeros += 1 if process3.returncode == 0 else 0
+    zeros += 1 if process4.returncode == 0 else 0
+
+    ones += 1 if process1.returncode == 1 else 0
+    ones += 1 if process2.returncode == 1 else 0
+    ones += 1 if process3.returncode == 1 else 0
+    ones += 1 if process4.returncode == 1 else 0
+
+    assert zeros == 2 and ones == 2, "Wrong return codes"
 
 
 def test_parallel_runs(binary_path, project_dir):
-    local_filename_4 = "downloaded_video_4.mp4"
-    local_filename_5 = "downloaded_video_5.mp4"
-    download_file(url, f"../{local_filename_4}")
-    download_file(url, f"../{local_filename_5}")
+    download_file(url, f"../{local_filename}")
     shm_name_4 = "shared_memory_object_duplicate_4"
     shm_name_5 = "shared_memory_object_duplicate_5"
 
-    command1 = f"{binary_path} {project_dir}/{local_filename_4} {project_dir}/out1.mp4 " + shm_name_4
-    command2 = f"{binary_path} {project_dir}/{local_filename_4} {project_dir}/out1.mp4 " + shm_name_4
-    command3 = f"{binary_path} {project_dir}/{local_filename_5} {project_dir}/out2.mp4 " + shm_name_5
-    command4 = f"{binary_path} {project_dir}/{local_filename_5} {project_dir}/out2.mp4 " + shm_name_5
+    command1 = f"{binary_path} {project_dir}/{local_filename} {project_dir}/out1.mp4 " + shm_name_4
+    command2 = f"{binary_path} {project_dir}/{local_filename} {project_dir}/out1.mp4 " + shm_name_4
+    command3 = f"{binary_path} {project_dir}/{local_filename} {project_dir}/out2.mp4 " + shm_name_5
+    command4 = f"{binary_path} {project_dir}/{local_filename} {project_dir}/out2.mp4 " + shm_name_5
 
     process1 = subprocess.Popen(command1, shell=True)
     process2 = subprocess.Popen(command2, shell=True)

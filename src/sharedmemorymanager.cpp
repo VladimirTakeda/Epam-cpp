@@ -1,10 +1,13 @@
 #include "sharedmemorymanager.h"
 
+#include "dataqueue/sharedbuffer.h"
+
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <semaphore.h>
 #include <sys/mman.h>
+#include <thread>
 #include <unistd.h>
 
 constexpr int SIZE = 2 * 1024 * 1024 + 100;
@@ -17,8 +20,8 @@ SharedMemoryManager::SharedMemoryManager(const std::string& semaphorePreffixName
         } else {
             std::cout << std::this_thread::get_id() << " may be writer " << std::endl;
             static std::string writerName = semaphorePreffixName + '2';
-            m_writerSem                   = sem_open(writerName.c_str(), O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
-            if (m_writerSem != SEM_FAILED) {
+            m_writerSem                   = std::make_unique<SemWrapper>(writerName, 1);
+            if (m_writerSem->IsCreator()) {
                 type = Type::writer;
             }
         }
@@ -74,7 +77,7 @@ bool SharedMemoryManager::OpenSharedMemory(const std::string& semaphorePreffixNa
 toSend SharedMemoryManager::GetBufferByIndex(size_t index)
 {
     // add out of bound check
-    toSend buffer = toSend(new (m_shmPtr + sizeof(Message) * 2 + index * sizeof(Buffer)) Buffer(index));
+    toSend buffer = toSend(new (m_shmPtr + sizeof(Message) * 2 + index * sizeof(SharedBuffer)) SharedBuffer(index));
     return buffer;
 }
 
