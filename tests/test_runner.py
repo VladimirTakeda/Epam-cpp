@@ -76,9 +76,9 @@ def test_process_suspend_resume(binary_path, project_dir):
     process1 = subprocess.Popen(command1, shell=True)
     process2 = subprocess.Popen(command2, shell=True)
 
-    os.kill(process1.pid, signal.SIGSTOP)
+    os.kill(process2.pid, signal.SIGSTOP)
     time.sleep(2)
-    os.kill(process1.pid, signal.SIGCONT)
+    os.kill(process2.pid, signal.SIGCONT)
 
     process1.wait()
     process2.wait()

@@ -85,7 +85,7 @@ Message* SharedMemoryManager::GetQueueByIndex(const size_t index) const
 
 SharedMemoryManager::~SharedMemoryManager()
 {
-    std::cout << " ~SharedMemoryWrapper" << std::endl;
+    std::cout << std::this_thread::get_id() << " ~SharedMemoryWrapper" << std::endl;
 
     if (munmap(m_shmPtr, SHM_SIZE) == -1) {
         perror("munmap");

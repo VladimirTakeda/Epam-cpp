@@ -76,7 +76,7 @@ public:
 private:
     /// @brief erase destination in case of error
     /// don't create method for one invoke
-    void CleanUp(){};
+    void CleanUp() {};
 
 private:
     std::ofstream m_out;
@@ -99,20 +99,21 @@ public:
     void Run() override
     {
         while (true) {
-            Message message = m_dataQueueFromSharedMemoryToEventReader.receiveData();
-
-            if (message.type == I_HAVE_A_DATA) {
-                m_dataQueueFromEventReaderToIO.sendBuffer(m_sharedMemory.GetBufferByIndex(message.bufferIndex));
-            }
-            if (message.type == I_HAVE_DONE) {
+            std::optional<Message> message = m_dataQueueFromSharedMemoryToEventReader.receiveData();
+            if (!message) {
+                std::cout << std::this_thread::get_id() << " timeOut occured " << std::endl;
                 m_dataQueueFromEventReaderToIO.sendBuffer(nullptr);
-                bool res = m_stopSource.request_stop();
-                if (!res) {
-                    std::cout << std::this_thread::get_id() << " can't stop the threads " << std::endl;
-                }
                 break;
             }
-            if (message.type == I_AM_ALIVE) {
+
+            if (message->type == I_HAVE_A_DATA) {
+                m_dataQueueFromEventReaderToIO.sendBuffer(m_sharedMemory.GetBufferByIndex(message->bufferIndex));
+            }
+            if (message->type == I_HAVE_DONE) {
+                m_dataQueueFromEventReaderToIO.sendBuffer(nullptr);
+                break;
+            }
+            if (message->type == I_AM_ALIVE) {
                 continue;
             }
         }
@@ -139,8 +140,10 @@ public:
     void Run() override
     {
         while (true) {
-            auto Buffer = m_dataQueueFromIOToEventWriter.receiveBuffer();
-            if (Buffer && Buffer->Data())
+            auto [Buffer, isTimeOut] = m_dataQueueFromIOToEventWriter.receiveBufferWithTimeout();
+            if (isTimeOut) {
+                m_dataQueueFromEventWriterToSharedMemory.sendData(Message{I_AM_ALIVE, ++messageId, 0});
+            } else if (Buffer && Buffer->Data())
                 m_dataQueueFromEventWriterToSharedMemory.sendData(Message{I_HAVE_A_DATA, ++messageId, Buffer->Index()});
             else {
                 m_dataQueueFromEventWriterToSharedMemory.sendData(Message{I_HAVE_DONE, ++messageId, 0});

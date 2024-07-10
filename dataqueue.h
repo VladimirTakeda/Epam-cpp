@@ -4,6 +4,7 @@
 
 #include <condition_variable>
 #include <memory>
+#include <optional>
 #include <queue>
 #include <semaphore.h>
 
@@ -12,7 +13,10 @@
 /// Try to connect it with the index
 struct Buffer {
     // because default constructor initilize m_length with zero
-    Buffer(size_t index) : m_index(index){}
+    Buffer(size_t index)
+        : m_index(index)
+    {
+    }
     [[nodiscard]] char* Data() noexcept { return m_data; }
     size_t& Size() noexcept { return m_length; }
     uint32_t Index() const noexcept { return m_index; }
@@ -47,13 +51,17 @@ typedef std::unique_ptr<Buffer, CustomDeleter> toSend;
 /// Thread-safe queue for thread communication
 class DataQueue {
 public:
+    DataQueue(uint32_t timeOutSec);
     /// @brief Send an index
     void sendBuffer(toSend buffer);
 
     /// @brief Request an index
     toSend receiveBuffer();
 
+    std::pair<toSend, bool> receiveBufferWithTimeout();
+
 protected:
+    uint32_t m_timeOutSec;
     std::deque<toSend> m_storage;
     std::mutex m_guard;
     std::condition_variable m_condVar;
@@ -62,13 +70,15 @@ protected:
 /// Shared memory integer block wrapper
 class SharedQueueBuffer {
 public:
-    SharedQueueBuffer(Message* memory, const std::string& readCaptureName, const std::string& readReleaseName);
+    SharedQueueBuffer(uint32_t timeOutSec, Message* memory, const std::string& readCaptureName,
+                      const std::string& readReleaseName);
     /// @brief Get value using semaphore sync
-    [[nodiscard]] Message ReadValue() const;
+    [[nodiscard]] std::optional<Message> ReadValue() const;
     /// @brief Set value using semaphore sync
     void WriteValue(Message) const;
 
 private:
+    uint32_t m_timeOutSec;
     Message* m_memory;
     SemWrapper m_readSem;
     SemWrapper m_writeSem;
@@ -86,7 +96,7 @@ public:
     void sendData(Message buffer) const;
 
     /// @brief I want to recieve a buffer
-    [[nodiscard]] Message receiveData() const;
+    [[nodiscard]] std::optional<Message> receiveData() const;
 
 private:
     SharedQueueBuffer& m_readBuffer;
