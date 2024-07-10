@@ -63,5 +63,5 @@ jobs:
         # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
         run: |
           cd tests
-          pytest -v -s --binary-path="${{ steps.strings.outputs.build-output-dir }}/Epam-cpp" --project-dir="${{ github.workspace }}"
+          pytest -v -s --color=yes --binary-path="${{ steps.strings.outputs.build-output-dir }}/Epam-cpp" --project-dir="${{ github.workspace }}"
 

@@ -85,3 +85,58 @@ def test_process_suspend_resume(binary_path, project_dir):
 
     assert process1.returncode == 0, "Process 1 did not complete successfully after being stopped and continued."
     assert process2.returncode == 0, "Process 2 did not complete successfully."
+
+
+def test_duplicate_runs(binary_path, project_dir):
+    local_filename = "downloaded_video_3.mp4"
+    download_file(url, f"../{local_filename}")
+    shm_name = "shared_memory_object_duplicate"
+
+    command1 = f"{binary_path} {project_dir}/{local_filename} {project_dir}/out1.mp4 " + shm_name
+    command2 = f"{binary_path} {project_dir}/{local_filename} {project_dir}/out1.mp4 " + shm_name
+    command3 = f"{binary_path} {project_dir}/{local_filename} {project_dir}/out1.mp4 " + shm_name
+    command4 = f"{binary_path} {project_dir}/{local_filename} {project_dir}/out1.mp4 " + shm_name
+
+    process1 = subprocess.Popen(command1, shell=True)
+    process2 = subprocess.Popen(command2, shell=True)
+    process3 = subprocess.Popen(command3, shell=True)
+    process4 = subprocess.Popen(command4, shell=True)
+
+    process1.wait()
+    process2.wait()
+    process3.wait()
+    process4.wait()
+
+    assert process1.returncode == 0, "Process 1 did not terminate successfully."
+    assert process2.returncode == 0, "Process 2 did not terminate successfully."
+    assert process3.returncode == 1, "Process 3 did terminate successfully, but shouldn't"
+    assert process4.returncode == 1, "Process 4 did terminate successfully, but shouldn't"
+
+
+def test_parallel_runs(binary_path, project_dir):
+    local_filename_4 = "downloaded_video_4.mp4"
+    local_filename_5 = "downloaded_video_5.mp4"
+    download_file(url, f"../{local_filename_4}")
+    download_file(url, f"../{local_filename_5}")
+    shm_name_4 = "shared_memory_object_duplicate_4"
+    shm_name_5 = "shared_memory_object_duplicate_5"
+
+    command1 = f"{binary_path} {project_dir}/{local_filename_4} {project_dir}/out1.mp4 " + shm_name_4
+    command2 = f"{binary_path} {project_dir}/{local_filename_4} {project_dir}/out1.mp4 " + shm_name_4
+    command3 = f"{binary_path} {project_dir}/{local_filename_5} {project_dir}/out2.mp4 " + shm_name_5
+    command4 = f"{binary_path} {project_dir}/{local_filename_5} {project_dir}/out2.mp4 " + shm_name_5
+
+    process1 = subprocess.Popen(command1, shell=True)
+    process2 = subprocess.Popen(command2, shell=True)
+    process3 = subprocess.Popen(command3, shell=True)
+    process4 = subprocess.Popen(command4, shell=True)
+
+    process1.wait()
+    process2.wait()
+    process3.wait()
+    process4.wait()
+
+    assert process1.returncode == 0, "Process 1 did not terminate successfully."
+    assert process2.returncode == 0, "Process 2 did not terminate successfully."
+    assert process3.returncode == 0, "Process 3 did not terminate successfully."
+    assert process4.returncode == 0, "Process 4 did not terminate successfully."

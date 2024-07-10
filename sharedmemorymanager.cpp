@@ -17,7 +17,7 @@ SharedMemoryManager::SharedMemoryManager(const std::string& semaphorePreffixName
         } else {
             std::cout << std::this_thread::get_id() << " may be writer " << std::endl;
             static std::string writerName = semaphorePreffixName + '2';
-            m_writerSem                   = sem_open(writerName.c_str(), O_CREAT, S_IRUSR | S_IWUSR, 1);
+            m_writerSem                   = sem_open(writerName.c_str(), O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
             if (m_writerSem != SEM_FAILED) {
                 type = Type::writer;
             }

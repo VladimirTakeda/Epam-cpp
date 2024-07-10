@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
         std::unique_ptr<SharedMemoryManager> sharedObject = std::make_unique<SharedMemoryManager>(semPrefix, argv[3]);
         if (sharedObject->WhoAmI() == Type::none) {
             std::cout << std::this_thread::get_id() << " I don't know who am I" << std::endl;
-            return 0;
+            return 1;
         }
 
         std::unique_ptr<Task> IOtask;
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
             EventReaderTask = CreateEventReaderTask(*sharedObject, *fromEventToIO, *dataQueueFromSharedMemoryToEventReader);
             EventWriterTask = CreateEventWriterTask(*fromIOToEvent, *dataQueueFromSharedMemoryToEventReader);
             IOtask          = CreateReadTask(argv[1], *fromEventToIO, *fromIOToEvent);
-        } else {
+        } else if (sharedObject->WhoAmI() == Type::writer) {
             /// need to push 2 free buffers to reader
             std::cout << std::this_thread::get_id() << " I am writer" << std::endl;
             EraseFile(argv[2]);
