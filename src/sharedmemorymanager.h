@@ -38,6 +38,7 @@ public:
 private:
     Type type = Type::none;
 
+    const char* m_sharedObjName;
     std::unique_ptr<SemWrapper> m_writerSem;
     std::unique_ptr<SemWrapper> m_memorySem;
     char* m_shmPtr{};

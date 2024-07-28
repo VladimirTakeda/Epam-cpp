@@ -13,6 +13,7 @@
 constexpr int SIZE = 2 * 1024 * 1024 + 100;
 
 SharedMemoryManager::SharedMemoryManager(const std::string& semaphorePreffixName, const char* SharedObjName)
+    : m_sharedObjName(SharedObjName)
 {
     try {
         if (OpenSharedMemory(semaphorePreffixName, SharedObjName)) {
@@ -20,7 +21,7 @@ SharedMemoryManager::SharedMemoryManager(const std::string& semaphorePreffixName
         } else {
             std::cout << std::this_thread::get_id() << " may be writer " << std::endl;
             static std::string writerName = semaphorePreffixName + '2';
-            m_writerSem                   = std::make_unique<SemWrapper>(writerName, 1);
+            m_writerSem                   = std::make_unique<SemWrapper>(writerName, 1, DeletePolicy::DecideYourSelf);
             if (m_writerSem->IsCreator()) {
                 type = Type::writer;
             }
@@ -37,7 +38,7 @@ SharedMemoryManager::SharedMemoryManager(const std::string& semaphorePreffixName
 
 bool SharedMemoryManager::InitializeSharedMemory(const std::string& semaphoreName, bool isCreator)
 {
-    m_memorySem = std::make_unique<SemWrapper>(semaphoreName, 1);
+    m_memorySem = std::make_unique<SemWrapper>(semaphoreName, 1, isCreator ? DeletePolicy::Delete : DeletePolicy::DontDelete);
     SemMutexWrapper mutex(m_memorySem);
 
     if (isCreator && ftruncate(m_shmFd, SIZE) == -1) {
@@ -99,6 +100,9 @@ SharedMemoryManager::~SharedMemoryManager()
         perror("close");
         exit(1);
     }
+
+    if (type == Type::reader)
+        shm_unlink(m_sharedObjName);
 }
 
 Type SharedMemoryManager::WhoAmI() const

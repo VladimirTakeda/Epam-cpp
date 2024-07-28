@@ -12,7 +12,7 @@ using MessagePtr = std::unique_ptr<Message>;
 class SharedQueueBuffer {
 public:
     SharedQueueBuffer(uint32_t timeOutSec, Message* memory, const std::string& readCaptureName,
-                      const std::string& readReleaseName);
+                      const std::string& readReleaseName, bool isReader);
     /// @brief Get value using semaphore sync
     [[nodiscard]] std::pair<MessagePtr, bool> ReadValueWithTimeOut() const;
     /// @brief Set value using semaphore sync

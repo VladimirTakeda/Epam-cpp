@@ -1,11 +1,11 @@
 #include "interprocessdataqueue.h"
 
 SharedQueueBuffer::SharedQueueBuffer(uint32_t timeOutSec, Message* memory, const std::string& readSemName,
-                                     const std::string& writeSemName)
+                                     const std::string& writeSemName, bool isReader)
     : m_timeOutSec(timeOutSec)
     , m_memory(memory)
-    , m_readSem(readSemName, 0)
-    , m_writeSem(writeSemName, 1)
+    , m_readSem(readSemName, 0, isReader ? DeletePolicy::Delete : DeletePolicy::DontDelete)
+    , m_writeSem(writeSemName, 1, isReader ? DeletePolicy::Delete : DeletePolicy::DontDelete)
 {
 }
 

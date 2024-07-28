@@ -74,8 +74,10 @@ int main(int argc, char* argv[])
         std::unique_ptr<Task> EventReaderTask;
         std::unique_ptr<Task> EventWriterTask;
 
-        SharedQueueBuffer firstBuf(2, sharedObject->GetQueueByIndex(0), semPrefix + '3', semPrefix + '4');
-        SharedQueueBuffer secondBuf(2, sharedObject->GetQueueByIndex(1), semPrefix + '5', semPrefix + '6');
+        SharedQueueBuffer firstBuf(2, sharedObject->GetQueueByIndex(0), semPrefix + '3', semPrefix + '4',
+                                   sharedObject->WhoAmI() == Type::reader);
+        SharedQueueBuffer secondBuf(2, sharedObject->GetQueueByIndex(1), semPrefix + '5', semPrefix + '6',
+                                    sharedObject->WhoAmI() == Type::reader);
 
         // can't move to inner bacause the tasks are alive till the end of the programm
         std::unique_ptr<DataQueue> fromEventToIO = std::make_unique<DataQueue>(1);

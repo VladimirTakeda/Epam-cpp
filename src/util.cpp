@@ -6,10 +6,11 @@
 #include <iostream>
 #include <utility>
 
-SemWrapper::SemWrapper(const std::string& semName, int initialValue)
+SemWrapper::SemWrapper(std::string semName, int initialValue, DeletePolicy m_policy)
     : m_semName(std::move(semName))
     , m_semaphore(nullptr)
     , m_created(false)
+    , m_policy(m_policy)
 {
     m_semaphore = sem_open(m_semName.c_str(), O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, initialValue);
     if (m_semaphore == SEM_FAILED) {
@@ -36,7 +37,9 @@ bool SemWrapper::IsCreator() const
 SemWrapper::~SemWrapper()
 {
     sem_close(m_semaphore);
-    if (m_created)
+    if (m_policy == DeletePolicy::Delete)
+        sem_unlink(m_semName.data());
+    if (m_policy == DeletePolicy::DecideYourSelf && m_created)
         sem_unlink(m_semName.data());
 }
 

@@ -21,6 +21,13 @@ def download_file(url, local_filename):
         print(f"File {local_filename} already exists, skip downloading.")
 
 
+def is_named_objects_empty():
+    if not os.path.isdir("/dev/shm/"):
+        raise ValueError(f"The path /dev/shm/ is not a valid directory")
+    contents = os.listdir("/dev/shm/")
+    return len(contents) == 0
+
+
 @pytest.fixture
 def clean_up_download():
     """Фикстура для очистки скачанного файла после теста"""
@@ -61,6 +68,7 @@ def test_binary_runs(binary_path, project_dir):
 
     assert process1.returncode == 0, "Process 1 did not terminate successfully."
     assert process2.returncode == 0, "Process 2 did not terminate successfully."
+    assert is_named_objects_empty(), "Named object has not been deleted"
 
 
 def test_process_suspend_resume(binary_path, project_dir):
@@ -82,6 +90,7 @@ def test_process_suspend_resume(binary_path, project_dir):
 
     assert process1.returncode == 0, "Process 1 did not complete successfully after being stopped and continued."
     assert process2.returncode == 0, "Process 2 did not complete successfully."
+    assert is_named_objects_empty(), "Named object has not been deleted"
 
 
 def test_duplicate_runs(binary_path, project_dir):
@@ -115,7 +124,9 @@ def test_duplicate_runs(binary_path, project_dir):
     ones += 1 if process3.returncode == 1 else 0
     ones += 1 if process4.returncode == 1 else 0
 
-    assert zeros == 2 and ones == 2, "Wrong return codes"
+    assert zeros == 2, "Wrong return zeros codes"
+    assert ones == 2, "Wrong return ones codes"
+    assert is_named_objects_empty(), "Named object has not been deleted"
 
 
 def test_parallel_runs(binary_path, project_dir):
@@ -142,3 +153,4 @@ def test_parallel_runs(binary_path, project_dir):
     assert process2.returncode == 0, "Process 2 did not terminate successfully."
     assert process3.returncode == 0, "Process 3 did not terminate successfully."
     assert process4.returncode == 0, "Process 4 did not terminate successfully."
+    assert is_named_objects_empty(), "Named object has not been deleted"
