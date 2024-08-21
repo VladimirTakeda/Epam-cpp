@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../util.h"
+#include "../utils/util.h"
 #include "sharedbuffer.h"
 
 #include <memory>
@@ -26,7 +26,7 @@ private:
 };
 
 /// DataQueue for process communication
-class InterProcessDataQueue {
+class InterProcessDataQueue : public Logger {
 public:
     InterProcessDataQueue(SharedQueueBuffer& readQueue, SharedQueueBuffer& writeQueue);
     /// @brief I am finished with the buffer and want to pass it to another process

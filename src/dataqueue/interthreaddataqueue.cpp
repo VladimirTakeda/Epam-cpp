@@ -1,7 +1,8 @@
 #include "interthreaddataqueue.h"
 
 DataQueue::DataQueue(uint32_t timeOutSec)
-    : m_timeOutSec(timeOutSec)
+    : Logger("DataQueue", this)
+    , m_timeOutSec(timeOutSec)
 {
 }
 

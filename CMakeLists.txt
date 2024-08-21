@@ -22,11 +22,15 @@ set(SOURCES
         src/dataqueue/sharedbuffer.cpp
         src/sharedmemorymanager.cpp
         src/threadpool.cpp
-        src/util.cpp
+        src/utils/util.cpp
         src/dataqueue/interprocessdataqueue.cpp
         src/dataqueue/interprocessdataqueue.h
         src/dataqueue/interthreaddataqueue.cpp
         src/dataqueue/interthreaddataqueue.h
+        src/utils/logger.cpp
+        src/utils/logger.h
+        src/utils/garbadgecollector.cpp
+        src/utils/garbadgecollector.h
 )
 
 add_executable(Epam-cpp ${SOURCES})

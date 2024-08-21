@@ -51,7 +51,8 @@ void SharedQueueBuffer::WriteValue(Message value) const
 }
 
 InterProcessDataQueue::InterProcessDataQueue(SharedQueueBuffer& readQueue, SharedQueueBuffer& writeQueue)
-    : m_readBuffer(readQueue)
+    : Logger("InterProcessDataQueue", this)
+    , m_readBuffer(readQueue)
     , m_writeBuffer(writeQueue)
 {
 }

@@ -1,6 +1,7 @@
 #include "sharedmemorymanager.h"
 
 #include "dataqueue/sharedbuffer.h"
+#include "utils/garbadgecollector.h"
 
 #include <cstring>
 #include <fcntl.h>
@@ -13,15 +14,17 @@
 constexpr int SIZE = 2 * 1024 * 1024 + 100;
 
 SharedMemoryManager::SharedMemoryManager(const std::string& semaphorePreffixName, const char* SharedObjName)
-    : m_sharedObjName(SharedObjName)
+    : Logger("SharedMemoryManager", this)
+    , m_sharedObjName(SharedObjName)
 {
     try {
         if (OpenSharedMemory(semaphorePreffixName, SharedObjName)) {
             type = Type::reader;
+            GarbageCollector::GetInstance().Push(SharedObjName, shm_unlink);
         } else {
             std::cout << std::this_thread::get_id() << " may be writer " << std::endl;
             static std::string writerName = semaphorePreffixName + '2';
-            m_writerSem                   = std::make_unique<SemWrapper>(writerName, 1, DeletePolicy::DecideYourSelf);
+            m_writerSem                   = std::make_unique<SemWrapper>(writerName, 1, DeletePolicy::Delete);
             if (m_writerSem->IsCreator()) {
                 type = Type::writer;
             }

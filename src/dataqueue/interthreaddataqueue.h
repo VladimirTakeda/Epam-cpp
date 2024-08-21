@@ -1,12 +1,13 @@
 #pragma once
 
+#include "../utils/logger.h"
 #include "sharedbuffer.h"
 
 #include <condition_variable>
 #include <deque>
 
 /// Thread-safe queue for thread communication
-class DataQueue {
+class DataQueue : public Logger {
 public:
     explicit DataQueue(uint32_t timeOutSec);
     /// @brief Send an index

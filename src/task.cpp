@@ -1,5 +1,7 @@
 #include "task.h"
 
+#include "utils/garbadgecollector.h"
+
 #include <iostream>
 #include <stdexcept>
 #include <thread>
@@ -38,6 +40,7 @@ public:
             m_dataQueueFromIOToEvent.sendBuffer(std::move(toSend));
             toSend = m_dataQueueFromEventToIO.receiveBuffer();
             // std::cout << std::this_thread::get_id() << " loop reading " << std::endl;
+            throw std::logic_error("alert");
         }
         m_dataQueueFromIOToEvent.sendBuffer(StopSignal);
         std::cout << std::this_thread::get_id() << " end reading " << std::endl;
@@ -103,6 +106,7 @@ public:
         while (true) {
             auto [message, isTimeout] = m_dataQueueFromSharedMemoryToEventReader.receiveDataWithTimeOut();
             if (isTimeout) {
+                GarbageCollector::GetInstance().CleanObjects();
                 std::cout << std::this_thread::get_id() << " timeOut occured " << std::endl;
                 m_dataQueueFromEventReaderToIO.sendBuffer(StopSignal);
                 break;

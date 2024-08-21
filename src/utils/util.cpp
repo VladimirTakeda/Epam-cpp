@@ -1,5 +1,7 @@
 #include "util.h"
 
+#include "garbadgecollector.h"
+
 #include <cstring>
 #include <fcntl.h>
 #include <filesystem>
@@ -7,7 +9,8 @@
 #include <utility>
 
 SemWrapper::SemWrapper(std::string semName, int initialValue, DeletePolicy m_policy)
-    : m_semName(std::move(semName))
+    : Logger("SemWrapper", this)
+    , m_semName(std::move(semName))
     , m_semaphore(nullptr)
     , m_created(false)
     , m_policy(m_policy)
@@ -24,6 +27,7 @@ SemWrapper::SemWrapper(std::string semName, int initialValue, DeletePolicy m_pol
         }
     } else {
         m_created = true;
+        GarbageCollector::GetInstance().Push(m_semName.c_str(), sem_unlink);
     }
 }
 
@@ -32,14 +36,12 @@ bool SemWrapper::IsCreator() const
     return m_created;
 }
 
-/// TODO: who is responsible for eresure?
-/// In default situation, when everything is file it should be reader because reader acts first
 SemWrapper::~SemWrapper()
 {
     sem_close(m_semaphore);
     if (m_policy == DeletePolicy::Delete)
         sem_unlink(m_semName.data());
-    if (m_policy == DeletePolicy::DecideYourSelf && m_created)
+    if (m_created)
         sem_unlink(m_semName.data());
 }
 

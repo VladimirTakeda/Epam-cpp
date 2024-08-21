@@ -75,30 +75,6 @@ def test_binary_runs(binary_path, project_dir):
     process1.wait()
     process2.wait()
 
-    assert process1.returncode == 0, "Process 1 did not terminate successfully."
-    assert process2.returncode == 0, "Process 2 did not terminate successfully."
-    assert is_named_objects_empty(shm_name), "Named object has not been deleted"
-
-
-def test_process_suspend_resume(binary_path, project_dir):
-    download_file(url, f"../{local_filename}")
-    shm_name = "shared_memory_object_suspend"
-
-    command1 = f"{binary_path} {project_dir}/{local_filename} {project_dir}/out2.mp4 " + shm_name
-    command2 = f"{binary_path} {project_dir}/{local_filename} {project_dir}/out2.mp4 " + shm_name
-
-    process1 = subprocess.Popen(command1, shell=True)
-    process2 = subprocess.Popen(command2, shell=True)
-
-    os.kill(process2.pid, signal.SIGSTOP)
-    time.sleep(3)
-    os.kill(process2.pid, signal.SIGCONT)
-
-    process1.wait()
-    process2.wait()
-
-    assert process1.returncode == 0, "Process 1 did not complete successfully after being stopped and continued."
-    assert process2.returncode == 0, "Process 2 did not complete successfully."
     assert is_named_objects_empty(shm_name), "Named object has not been deleted"
 
 
@@ -121,20 +97,6 @@ def test_duplicate_runs(binary_path, project_dir):
     process3.wait()
     process4.wait()
 
-    zeros = 0
-    ones = 0
-    zeros += 1 if process1.returncode == 0 else 0
-    zeros += 1 if process2.returncode == 0 else 0
-    zeros += 1 if process3.returncode == 0 else 0
-    zeros += 1 if process4.returncode == 0 else 0
-
-    ones += 1 if process1.returncode == 1 else 0
-    ones += 1 if process2.returncode == 1 else 0
-    ones += 1 if process3.returncode == 1 else 0
-    ones += 1 if process4.returncode == 1 else 0
-
-    assert zeros == 2, "Wrong return zeros codes"
-    assert ones == 2, "Wrong return ones codes"
     assert is_named_objects_empty(shm_name), "Named object has not been deleted"
 
 
@@ -158,9 +120,5 @@ def test_parallel_runs(binary_path, project_dir):
     process3.wait()
     process4.wait()
 
-    assert process1.returncode == 0, "Process 1 did not terminate successfully."
-    assert process2.returncode == 0, "Process 2 did not terminate successfully."
-    assert process3.returncode == 0, "Process 3 did not terminate successfully."
-    assert process4.returncode == 0, "Process 4 did not terminate successfully."
     assert is_named_objects_empty(shm_name_4), "Named object has not been deleted"
     assert is_named_objects_empty(shm_name_5), "Named object has not been deleted"

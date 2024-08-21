@@ -1,14 +1,16 @@
 #pragma once
 
+#include "logger.h"
+
 #include <memory>
 #include <semaphore.h>
 
 enum class Type : uint8_t { reader = 0, writer = 1, none = 2 };
 
-enum class DeletePolicy : uint8_t { Delete = 0, DontDelete = 1, DecideYourSelf = 2 };
+enum class DeletePolicy : uint8_t { Delete = 0, DontDelete = 1 };
 
 /// Posix Semaphore wrapper that does linking to and unlinking from current process adress space
-class SemWrapper {
+class SemWrapper : public Logger {
 public:
     explicit SemWrapper(std::string semName, int intialValue, DeletePolicy policy);
     [[nodiscard]] bool IsCreator() const;

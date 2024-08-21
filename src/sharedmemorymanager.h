@@ -1,7 +1,7 @@
 #pragma once
 
 #include "dataqueue/sharedbuffer.h"
-#include "util.h"
+#include "utils/util.h"
 
 #include <string>
 
@@ -17,7 +17,7 @@ constexpr int SHM_SIZE = 2 * 1024 * 1024 + 100;
 // aligned, long and pointers are 8-byte aligned.
 
 /// A class to manipulate shared memory object
-class SharedMemoryManager {
+class SharedMemoryManager : public Logger {
 public:
     SharedMemoryManager() = default;
     /// @brief opens semaphores, link shared memory in this process, set the process type (reader/writer)

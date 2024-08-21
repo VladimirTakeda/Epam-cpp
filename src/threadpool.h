@@ -9,7 +9,7 @@
 
 /// A ThreadPool with side threads and main thread to execute tasks
 /// Not thread-safe (Use only with main thread)
-class ThreadPool {
+class ThreadPool : public Logger {
 public:
     /// @brief creates a side threadCount of threads
     explicit ThreadPool(size_t threadCount = std::thread::hardware_concurrency());

@@ -1,18 +1,17 @@
 #include "threadpool.h"
 
-ThreadPool::ThreadPool(size_t threadCount) {
+ThreadPool::ThreadPool(size_t threadCount)
+    : Logger("ThreadPool", this)
+{
     for (size_t i = 0; i < threadCount; ++i) {
         m_threads.emplace_back([this] {
             while (true) {
                 std::unique_ptr<Task> task;
                 {
-                    std::unique_lock<std::mutex> lock(
-                            m_queue_mutex);
+                    std::unique_lock<std::mutex> lock(m_queue_mutex);
 
-                    if (m_tasks.empty()){
-                        m_cv.wait(lock, [this] {
-                            return !m_tasks.empty() || m_stopThreads;
-                        });
+                    if (m_tasks.empty()) {
+                        m_cv.wait(lock, [this] { return !m_tasks.empty() || m_stopThreads; });
                     }
 
                     if (m_stopThreads && m_tasks.empty()) {
@@ -29,12 +28,12 @@ ThreadPool::ThreadPool(size_t threadCount) {
     }
 }
 
-void ThreadPool::runInMainThread() {
+void ThreadPool::runInMainThread()
+{
     while (true) {
         std::unique_ptr<Task> task;
         {
-            std::unique_lock<std::mutex> lock(
-                    m_queue_mutex);
+            std::unique_lock<std::mutex> lock(m_queue_mutex);
 
             if (m_tasks.empty()) {
                 return;
@@ -48,7 +47,8 @@ void ThreadPool::runInMainThread() {
     }
 }
 
-ThreadPool::~ThreadPool() {
+ThreadPool::~ThreadPool()
+{
     runInMainThread();
     {
         std::unique_lock<std::mutex> lock(m_queue_mutex);
@@ -57,13 +57,13 @@ ThreadPool::~ThreadPool() {
 
     m_cv.notify_all();
 
-    for (auto &thread: m_threads) {
+    for (auto& thread : m_threads) {
         thread.join();
     }
 }
 
-
-void ThreadPool::enqueue(std::unique_ptr<Task> &&task) {
+void ThreadPool::enqueue(std::unique_ptr<Task>&& task)
+{
     {
         std::unique_lock<std::mutex> lock(m_queue_mutex);
         m_tasks.emplace(std::move(task));
