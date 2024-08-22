@@ -40,7 +40,6 @@ public:
             m_dataQueueFromIOToEvent.sendBuffer(std::move(toSend));
             toSend = m_dataQueueFromEventToIO.receiveBuffer();
             // std::cout << std::this_thread::get_id() << " loop reading " << std::endl;
-            throw std::logic_error("alert");
         }
         m_dataQueueFromIOToEvent.sendBuffer(StopSignal);
         std::cout << std::this_thread::get_id() << " end reading " << std::endl;
@@ -72,6 +71,7 @@ public:
             m_out.write(toSend->Data(), toSend->Size());
             m_dataQueueFromIOToEvent.sendBuffer(std::move(toSend));
             toSend = m_dataQueueFromEventToIO.receiveBuffer();
+            throw std::logic_error("alert");
             // std::cout << std::this_thread::get_id() << " loop writing " << std::endl;
         }
         m_dataQueueFromIOToEvent.sendBuffer(StopSignal);
