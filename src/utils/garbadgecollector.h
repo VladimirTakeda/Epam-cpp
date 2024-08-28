@@ -12,8 +12,7 @@
 class GarbageCollector {
     std::vector<std::pair<std::string, int (*)(const char*)>> toDelete;
 
-    GarbageCollector()  = default;
-    ~GarbageCollector() = default;
+    GarbageCollector() = default;
 
     GarbageCollector(const GarbageCollector&)            = delete;
     GarbageCollector& operator=(const GarbageCollector&) = delete;

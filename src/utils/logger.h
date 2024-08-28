@@ -4,12 +4,12 @@
 #include <utility>
 
 /// A RAII class to track other classes lifetime
+/// You should inherit from this class
 class Logger {
 public:
-    Logger(std::string className, const void* ptr);
-    virtual ~Logger();
+    Logger(std::string className);
+    ~Logger();
 
 private:
-    const void* m_ptr;
     std::string m_className;
 };
