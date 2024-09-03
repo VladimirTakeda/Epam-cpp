@@ -1,35 +1,15 @@
 #include "src/dataqueue/sharedbuffer.h"
-#include "src/sharedmemorymanager.h"
+#include "src/network/server/tcpserver.h"
 #include "src/task.h"
 #include "src/threadpool.h"
 #include "src/util.h"
 
-#include <csignal>
-#include <fcntl.h>
+#include <boost/asio.hpp>
+#include <boost/program_options.hpp>
 #include <filesystem>
-#include <fstream>
 #include <functional>
 #include <iostream>
-#include <memory>
-#include <sys/mman.h>
 #include <thread>
-#include <unistd.h>
-
-// Task : 1) We need to define who has created shared memory
-//        2) We need to syncronize sem_open and ftruncate between 2 processes (we can't invoke ftruncate for one memory at the
-//        same time)
-
-// Implementation : 1.1) We need to use O_CREAT | O_EXCL in sem_open to handle EEXIST error
-//                  1.2) We need to invoke sem_open 2 times for process with EEXIST error
-//                  2.1) We will use named semaphore to syncronize sem_open and ftruncate
-
-// Problems : 1) We have too many if else to hanle in parallel processes
-//            2) We have to define who is responsible for semaphore removal (possible the process who has created it)
-//            3) We have intinite loop, because we invoke sem_open 2+ times. (in first time we check if it was exist using O_CREAT
-//            | O_EXCL, if yes, we invoke
-//              sem_open for the second time, but again we have to check who has created the semaptore, current thread or another
-//              one, so we need to invoke sem_open with O_CREAT | O_EXCL params and check EEXIST error, if it exist we need to
-//              invoke sem_open again and again.
 
 void MeasureTime(const std::function<void()>& func)
 {
@@ -55,63 +35,72 @@ bool ValidateArguments(int argc, char* argv[])
     return true;
 }
 
+void run_client(const std::string& host, const std::string& port)
+{
+    try {
+        boost::asio::io_context io_context;
+
+        tcp::resolver resolver(io_context);
+        auto endpoints = resolver.resolve(host, port);
+        tcp::socket socket(io_context);
+        boost::asio::connect(socket, endpoints);
+
+        char request[Session::max_length];
+        std::cout << "Enter message: ";
+        std::cin.getline(request, Session::max_length);
+
+        size_t request_length = std::strlen(request);
+        boost::asio::write(socket, boost::asio::buffer(request, request_length));
+
+        char reply[Session::max_length];
+        size_t reply_length = boost::asio::read(socket, boost::asio::buffer(reply, request_length));
+
+        std::cout << "Reply is: ";
+        std::cout.write(reply, reply_length);
+        std::cout << "\n";
+    } catch (std::exception& e) {
+        std::cerr << "Exception: " << e.what() << "\n";
+    }
+}
+
 int main(int argc, char* argv[])
 {
-    if (!ValidateArguments(argc, argv)) {
-        return 1;
-    }
+    boost::program_options::options_description desc("Allowed options");
+    desc.add_options()("help", "produce help message")("client", "run in client mode")("server", "run in server mode")(
+        "port", boost::program_options::value<short>(), "set port")("host", boost::program_options::value<std::string>(),
+                                                                    "set host (for client)");
 
-    {
-        const std::string semPrefix = std::string(argv[3]);
+    boost::program_options::variables_map vm;
+    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
+    boost::program_options::notify(vm);
 
-        std::unique_ptr<SharedMemoryManager> sharedObject = std::make_unique<SharedMemoryManager>(semPrefix, argv[3]);
-        if (sharedObject->WhoAmI() == Type::none) {
-            std::cout << std::this_thread::get_id() << " I don't know who am I" << std::endl;
+    if (vm.contains("server")) {
+        if (!vm.count("port")) {
+            std::cerr << "Port not set for server mode.\n";
             return 1;
         }
 
-        std::unique_ptr<Task> IOtask;
-        std::unique_ptr<Task> EventReaderTask;
-        std::unique_ptr<Task> EventWriterTask;
+        try {
+            boost::asio::io_context io_context;
 
-        SharedQueueBuffer firstBuf(2, sharedObject->GetQueueByIndex(0), semPrefix + '3', semPrefix + '4',
-                                   sharedObject->WhoAmI() == Type::reader);
-        SharedQueueBuffer secondBuf(2, sharedObject->GetQueueByIndex(1), semPrefix + '5', semPrefix + '6',
-                                    sharedObject->WhoAmI() == Type::reader);
-
-        // can't move to inner bacause the tasks are alive till the end of the programm
-        std::unique_ptr<DataQueue> fromEventToIO = std::make_unique<DataQueue>(1);
-        std::unique_ptr<DataQueue> fromIOToEvent = std::make_unique<DataQueue>(1);
-
-        std::unique_ptr<InterProcessDataQueue> dataQueueFromSharedMemoryToEventReader;
-
-        if (sharedObject->WhoAmI() == Type::reader) {
-            std::cout << std::this_thread::get_id() << " I am reader" << std::endl;
-            dataQueueFromSharedMemoryToEventReader = std::make_unique<InterProcessDataQueue>(firstBuf, secondBuf);
-
-            fromEventToIO->sendBuffer(sharedObject->GetBufferByIndex(0));
-            fromEventToIO->sendBuffer(sharedObject->GetBufferByIndex(1));
-
-            EventReaderTask = CreateEventReaderTask(*sharedObject, *fromEventToIO, *dataQueueFromSharedMemoryToEventReader);
-            EventWriterTask = CreateEventWriterTask(*fromIOToEvent, *dataQueueFromSharedMemoryToEventReader);
-            IOtask          = CreateReadTask(argv[1], *fromEventToIO, *fromIOToEvent);
-        } else if (sharedObject->WhoAmI() == Type::writer) {
-            /// need to push 2 free buffers to reader
-            std::cout << std::this_thread::get_id() << " I am writer" << std::endl;
-            EraseFile(argv[2]);
-
-            dataQueueFromSharedMemoryToEventReader = std::make_unique<InterProcessDataQueue>(secondBuf, firstBuf);
-
-            EventReaderTask = CreateEventReaderTask(*sharedObject, *fromEventToIO, *dataQueueFromSharedMemoryToEventReader);
-            EventWriterTask = CreateEventWriterTask(*fromIOToEvent, *dataQueueFromSharedMemoryToEventReader);
-            IOtask          = CreateWriteTask(argv[2], *fromEventToIO, *fromIOToEvent);
+            short port = vm["port"].as<short>();
+            Server s(io_context, port);
+            io_context.run();
+        } catch (std::exception& e) {
+            std::cerr << "Exception: " << e.what() << "\n";
+        }
+    } else if (vm.contains("client")) {
+        if (!vm.count("port") || !vm.count("host")) {
+            std::cerr << "Port or host not set for client mode.\n";
+            return 1;
         }
 
-        MeasureTime([&]() {
-            ThreadPool pool(2);
-            pool.enqueue(std::move(IOtask));
-            pool.enqueue(std::move(EventReaderTask));
-            pool.enqueue(std::move(EventWriterTask));
-        });
+        std::string host = vm["host"].as<std::string>();
+        std::string port = std::to_string(vm["port"].as<short>());
+
+        run_client(host, port);
+    } else {
+        std::cerr << "Mode (client or server) not set.\n";
+        return 1;
     }
 }

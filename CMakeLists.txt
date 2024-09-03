@@ -16,17 +16,26 @@ endif ()
 
 message(STATUS "CMAKE_CXX_FLAGS:" ${CMAKE_CXX_FLAGS})
 
+set(Boost_USE_STATIC_LIBS ON)
+
+find_package(Boost REQUIRED COMPONENTS system thread program_options)
+
+if (NOT Boost_FOUND)
+    message(FATAL_ERROR "Could not find Boost")
+endif ()
+
+include_directories(${Boost_INCLUDE_DIRS})
+
 set(SOURCES
         main.cpp
         src/task.cpp
         src/dataqueue/sharedbuffer.cpp
-        src/sharedmemorymanager.cpp
         src/threadpool.cpp
         src/util.cpp
-        src/dataqueue/interprocessdataqueue.cpp
-        src/dataqueue/interprocessdataqueue.h
         src/dataqueue/interthreaddataqueue.cpp
         src/dataqueue/interthreaddataqueue.h
 )
 
 add_executable(Epam-cpp ${SOURCES})
+
+target_link_libraries(Epam-cpp PRIVATE Boost::boost Boost::system Boost::thread Boost::program_options)

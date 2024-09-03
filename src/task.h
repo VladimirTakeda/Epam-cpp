@@ -1,9 +1,7 @@
 #pragma once
 
-#include "dataqueue/interprocessdataqueue.h"
 #include "dataqueue/interthreaddataqueue.h"
 #include "dataqueue/sharedbuffer.h"
-#include "sharedmemorymanager.h"
 
 #include <fstream>
 
@@ -23,7 +21,3 @@ private:
 
 std::unique_ptr<Task> CreateWriteTask(const char* fileName, DataQueue& dataQueueFromEventToIO, DataQueue& dataQueueFromIOToEvent);
 std::unique_ptr<Task> CreateReadTask(const char* fileName, DataQueue& dataQueueFromEventToIO, DataQueue& dataQueueFromIOToEvent);
-std::unique_ptr<Task> CreateEventReaderTask(SharedMemoryManager& sharedMemoryManager, DataQueue& dataQueueFromNotifierToIO,
-                                            InterProcessDataQueue& dataQueueFromSharedMemoryToEventReader);
-std::unique_ptr<Task> CreateEventWriterTask(DataQueue& dataQueueFromIOToEventWriter,
-                                            InterProcessDataQueue& dataQueueFromEventWriterToSharedMemory);

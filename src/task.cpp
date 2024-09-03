@@ -87,79 +87,6 @@ private:
     DataQueue& m_dataQueueFromIOToEvent;
 };
 
-/// Accumulate all the messages from another process to DataQueue
-class EventReaderTask final : public Task {
-public:
-    explicit EventReaderTask(SharedMemoryManager& sharedMemoryManager, DataQueue& dataQueueFromNotifierToIO,
-                             InterProcessDataQueue& dataQueueFromSharedMemoryToEventReader)
-        : m_sharedMemory(sharedMemoryManager)
-        , m_dataQueueFromEventReaderToIO(dataQueueFromNotifierToIO)
-        , m_dataQueueFromSharedMemoryToEventReader(dataQueueFromSharedMemoryToEventReader)
-    {
-    }
-    /// @brief grab the data from message queue and puts it to IOQueue
-    void Run() override
-    {
-        while (true) {
-            auto [message, isTimeout] = m_dataQueueFromSharedMemoryToEventReader.receiveDataWithTimeOut();
-            if (isTimeout) {
-                std::cout << std::this_thread::get_id() << " timeOut occured " << std::endl;
-                m_dataQueueFromEventReaderToIO.sendBuffer(StopSignal);
-                break;
-            }
-
-            if (message->type == I_HAVE_A_DATA) {
-                m_dataQueueFromEventReaderToIO.sendBuffer(m_sharedMemory.GetBufferByIndex(message->bufferIndex));
-            }
-            if (message->type == I_HAVE_DONE) {
-                m_dataQueueFromEventReaderToIO.sendBuffer(StopSignal);
-                break;
-            }
-            if (message->type == I_AM_ALIVE) {
-                continue;
-            }
-        }
-        std::cout << std::this_thread::get_id() << " end read Notifier " << std::endl;
-    }
-
-private:
-    SharedMemoryManager& m_sharedMemory;
-    DataQueue& m_dataQueueFromEventReaderToIO;
-    InterProcessDataQueue& m_dataQueueFromSharedMemoryToEventReader;
-};
-
-/// Accumulate all the messages from another process to DataQueue
-class EventWriterTask final : public Task {
-public:
-    explicit EventWriterTask(DataQueue& dataQueueFromIOToEventWriter,
-                             InterProcessDataQueue& dataQueueFromEventWriterToSharedMemory)
-        : m_dataQueueFromIOToEventWriter(dataQueueFromIOToEventWriter)
-        , m_dataQueueFromEventWriterToSharedMemory(dataQueueFromEventWriterToSharedMemory)
-    {
-    }
-    /// @brief grab the data from message queue and puts it to IOQueue
-    void Run() override
-    {
-        while (true) {
-            auto [Buffer, isTimeOut] = m_dataQueueFromIOToEventWriter.receiveBufferWithTimeout();
-            if (isTimeOut) {
-                m_dataQueueFromEventWriterToSharedMemory.sendData(Message{I_AM_ALIVE, ++messageId, 0});
-            } else if (Buffer && Buffer->Data())
-                m_dataQueueFromEventWriterToSharedMemory.sendData(Message{I_HAVE_A_DATA, ++messageId, Buffer->Index()});
-            else {
-                m_dataQueueFromEventWriterToSharedMemory.sendData(Message{I_HAVE_DONE, ++messageId, 0});
-                break;
-            }
-        }
-        std::cout << std::this_thread::get_id() << " end write Notifier " << std::endl;
-    }
-
-private:
-    size_t messageId = 0;
-    DataQueue& m_dataQueueFromIOToEventWriter;
-    InterProcessDataQueue& m_dataQueueFromEventWriterToSharedMemory;
-};
-
 std::unique_ptr<Task> CreateWriteTask(const char* const fileName, DataQueue& dataQueueFromEventToIO,
                                       DataQueue& dataQueueFromIOToEvent)
 {
@@ -170,17 +97,4 @@ std::unique_ptr<Task> CreateReadTask(const char* const fileName, DataQueue& data
                                      DataQueue& dataQueueFromIOToEvent)
 {
     return std::make_unique<ReadTask>(fileName, dataQueueFromEventToIO, dataQueueFromIOToEvent);
-}
-
-std::unique_ptr<Task> CreateEventReaderTask(SharedMemoryManager& sharedMemoryManager, DataQueue& dataQueueFromNotifierToIO,
-                                            InterProcessDataQueue& dataQueueFromSharedMemoryToEventReader)
-{
-    return std::make_unique<EventReaderTask>(sharedMemoryManager, dataQueueFromNotifierToIO,
-                                             dataQueueFromSharedMemoryToEventReader);
-}
-
-std::unique_ptr<Task> CreateEventWriterTask(DataQueue& dataQueueFromIOToEventWriter,
-                                            InterProcessDataQueue& dataQueueFromEventWriterToSharedMemory)
-{
-    return std::make_unique<EventWriterTask>(dataQueueFromIOToEventWriter, dataQueueFromEventWriterToSharedMemory);
 }
